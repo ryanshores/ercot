@@ -3,3 +3,5 @@ tweepy~=4.15.0
 schedule~=1.2.2
 matplotlib~=3.10.3
 python-dotenv~=1.1.0
+fastapi~=0.115.6
+uvicorn~=0.34.0
