@@ -61,13 +61,17 @@ def run_scheduler():
 
 
 def main():
-    # Start the scheduler in a background thread
-    target = run_scheduler if APP_MODE == 'prod' else run
-    scheduler_thread = threading.Thread(target=target, daemon=True)
-    scheduler_thread.start()
+    # Run once if not in production mode
+    if APP_MODE == 'dev':
+        run()
+    elif APP_MODE == 'prod':
+        # Start the scheduler in a background thread
+        target = run_scheduler if APP_MODE == 'prod' else run
+        scheduler_thread = threading.Thread(target=target, daemon=True)
+        scheduler_thread.start()
 
-    # Run the FastAPI server
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+        # Run the FastAPI server
+        uvicorn.run(app, host="0.0.0.0", port=8000)
 
 
 # ==== STARTUP ====
