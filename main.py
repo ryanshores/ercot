@@ -3,9 +3,8 @@ import traceback
 
 import schedule
 
-from logger import get_logger
-from clients.twitter import Twitter
 from clients.ercot import Ercot
+from logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -27,7 +26,7 @@ def run_scheduled():
         run() # Run immediately
         schedule.every(2).hours.at(":00").do(run)
 
-        print("Bot running. Will post every 2 hours.")
+        logger.info("Running schedule. Will check every 2 hours.")
         while True:
             schedule.run_pending()
             time.sleep(1)
