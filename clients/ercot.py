@@ -94,6 +94,9 @@ class Ercot:
         """Generate and save the pie chart visualization."""
         _, values, legend_labels, explodes = self._prepare_chart_data()
 
+        # remove negative values
+        values = [max(value, 0) for value in values]
+
         plt.figure(figsize=self.FIGURE_SIZE)
         colors = plt.get_cmap('tab20').colors
         wedges, _ = plt.pie(values, explode=explodes ,colors=colors, startangle=self.CHART_START_ANGLE)
