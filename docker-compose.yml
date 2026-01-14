@@ -2,3 +2,12 @@
 services:
   app:
     build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - ercot:/usr/src/app/out
+    environment:
+      - APP_MODE=prod
+
+volumes:
+  ercot:
