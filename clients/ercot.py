@@ -1,7 +1,9 @@
 import datetime
-import requests
 from typing import Dict, List, Tuple
+
+import requests
 from matplotlib import pyplot as plt
+
 from logger import get_logger
 
 logger = get_logger(__name__)
@@ -80,11 +82,12 @@ class Ercot:
         explodes = [0.1 if label not in self.RENEWABLE_SOURCES else 0 for label in labels]
         return labels, values, legend_labels, explodes
 
-    def _generate_text(self) -> str:
+    def _generate_text(self):
         """Generate formatted chart title with timestamp."""
         dt = datetime.datetime.strptime(self.timestamp, self.DATE_FORMAT)
         formatted_date = dt.strftime(self.DISPLAY_DATE_FORMAT)
-        self.title = f"ERCOT Energy Mix as of {formatted_date} ({self.pct_renewable:.1f}% Renewable)"
+        total_mw = sum(entry['gen'] for entry in self.mix.values())
+        self.title = f"ERCOT Energy Mix | {formatted_date} using {total_mw:.1f} MW ({self.pct_renewable:.1f}% Renewable)"
         self.message = f"Currently ERCOT is running on {self.pct_renewable:.2f}% renewable energy. #Texas #ERCOT #Renewables"
 
     def _get_png_file_name(self) -> str:
