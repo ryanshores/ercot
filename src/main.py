@@ -7,6 +7,7 @@ import schedule
 import uvicorn
 
 from src.clients.ercot import Ercot
+from src.db import save_fuel_mix, get_conn, init_db
 from src.logger import get_logger
 from src.router import app
 
@@ -17,8 +18,16 @@ APP_MODE = os.getenv('APP_MODE', 'dev')
 
 def run():
     try:
-        with Ercot() as ercot_client:
-            ercot_client.create_visualization()
+        with get_conn() as conn:
+            init_db(conn)
+            with Ercot() as ercot_client:
+                save_fuel_mix(
+                    conn,
+                    ercot_client.timestamp,
+                    ercot_client.mix,
+                    ercot_client.pct_renewable
+                )
+                ercot_client.create_visualization()
     except Exception as e:
         logger.error(f"Error in run: {e}")
 
