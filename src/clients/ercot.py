@@ -8,6 +8,7 @@ from src.logger import get_logger
 
 logger = get_logger(__name__)
 
+
 class Ercot:
     FIGURE_SIZE = (8, 6)
     CHART_START_ANGLE = 140
@@ -56,7 +57,7 @@ class Ercot:
         current_mix_key = list(current_day_mix.keys())[-1]
 
         # Get the current time mix
-        self.mix =  current_day_mix[current_mix_key]
+        self.mix = current_day_mix[current_mix_key]
         self.timestamp = current_mix_key
         logger.info(f'_fetch_fuel_mix {self.timestamp}')
 
@@ -102,7 +103,7 @@ class Ercot:
 
         plt.figure(figsize=self.FIGURE_SIZE)
         colors = plt.get_cmap('tab20').colors
-        wedges, _ = plt.pie(values, explode=explodes ,colors=colors, startangle=self.CHART_START_ANGLE)
+        wedges, _ = plt.pie(values, explode=explodes, colors=colors, startangle=self.CHART_START_ANGLE)
 
         img_file = f'{self.timestamp}.png' if self.timestamp else self.image_file
         img_file = f'out/{img_file}'

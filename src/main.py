@@ -14,6 +14,7 @@ logger = get_logger(__name__)
 
 APP_MODE = os.getenv('APP_MODE', 'dev')
 
+
 def run():
     try:
         with Ercot() as ercot_client:
@@ -26,8 +27,9 @@ def run_scheduler():
     """
     This function runs the scheduler in a loop.
     """
+
     try:
-        run() # Run immediately
+        run()  # Run immediately
         schedule.every(2).hours.at(":00").do(run)
 
         logger.info("Running schedule. Will check every 2 hours.")

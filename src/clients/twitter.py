@@ -8,6 +8,7 @@ from src.logger import get_logger
 load_dotenv()
 logger = get_logger(__name__)
 
+
 class Twitter:
     def __init__(self, api_key=None, api_secret=None, access_token=None, access_secret=None):
         self.api_key = api_key or os.getenv('TWITTER_API_KEY')
