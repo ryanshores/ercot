@@ -1,7 +1,9 @@
 import os
-from dotenv import load_dotenv
+
 import tweepy
-from logger import get_logger
+from dotenv import load_dotenv
+
+from src.logger import get_logger
 
 load_dotenv()
 logger = get_logger(__name__)
