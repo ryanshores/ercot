@@ -4,7 +4,7 @@ from typing import Dict, List, Tuple
 import requests
 from matplotlib import pyplot as plt
 
-from logger import get_logger
+from src.logger import get_logger
 
 logger = get_logger(__name__)
 

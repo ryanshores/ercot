@@ -9,8 +9,8 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 from fastapi.staticfiles import StaticFiles
 
-from clients.ercot import Ercot
-from logger import get_logger
+from src.clients.ercot import Ercot
+from src.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -26,7 +26,7 @@ def list_images():
     """
     Simple endpoint to list all images in the 'out' folder.
     """
-    files = [f for f in os.listdir("out") if f.endswith((".png", ".jpg", ".jpeg"))]
+    files = [f for f in os.listdir("../out") if f.endswith((".png", ".jpg", ".jpeg"))]
     files.sort(reverse=True)
 
     html_content = "<html><head><title>ERCOT Images</title></head><body><h1>ERCOT Visualizations</h1><ul>"
