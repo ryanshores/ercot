@@ -5,35 +5,14 @@ import traceback
 
 import schedule
 import uvicorn
-from fastapi import FastAPI
-from fastapi.responses import HTMLResponse
-from fastapi.staticfiles import StaticFiles
 
 from src.clients.ercot import Ercot
 from src.logger import get_logger
+from src.router import app
 
 logger = get_logger(__name__)
 
 APP_MODE = os.getenv('APP_MODE', 'dev')
-app = FastAPI()
-
-# Mount the 'out' folder to be served at '/images'
-app.mount("/images", StaticFiles(directory="out"), name="images")
-
-
-@app.get("/", response_class=HTMLResponse)
-def list_images():
-    """
-    Simple endpoint to list all images in the 'out' folder.
-    """
-    files = [f for f in os.listdir("../out") if f.endswith((".png", ".jpg", ".jpeg"))]
-    files.sort(reverse=True)
-
-    html_content = "<html><head><title>ERCOT Images</title></head><body><h1>ERCOT Visualizations</h1><ul>"
-    for file in files:
-        html_content += f'<li><a href="/images/{file}">{file}</a></li>'
-    html_content += "</ul></body></html>"
-    return html_content
 
 def run():
     try:
