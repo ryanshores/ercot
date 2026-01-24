@@ -39,7 +39,7 @@ class GenInstantBase(BaseModel):
 
 
 class GenInstantCreate(GenInstantBase):
-    sources: list[GenSourceCreate]
+    sources: dict[str, float]
 
 
 class GenInstant(GenInstantBase):

@@ -4,38 +4,14 @@ from sqlalchemy.orm import relationship
 from src.models.shared import EntityBase
 
 energy_sources = {
-    'Coal and Lignite': {
-        'name': 'coal',
-        'renewable': False
-    },
-    'Hydro': {
-        'name': 'hydro',
-        'renewable': True
-    },
-    'Natural Gas': {
-        'name': 'natural_gas',
-        'renewable': False
-    },
-    'Nuclear': {
-        'name': 'nuclear',
-        'renewable': True
-    },
-    'Other': {
-        'name': 'other',
-        'renewable': True
-    },
-    'Power Storage': {
-        'name': 'power_storage',
-        'renewable': True
-    },
-    'Solar': {
-        'name': 'solar',
-        'renewable': True
-    },
-    'Wind': {
-        'name': 'wind',
-        'renewable': True
-    }
+    'Coal and Lignite': {'name': 'coal', 'renewable': False},
+    'Hydro': {'name': 'hydro', 'renewable': True},
+    'Natural Gas': {'name': 'natural_gas', 'renewable': False},
+    'Nuclear': {'name': 'nuclear', 'renewable': True},
+    'Other': {'name': 'other', 'renewable': True},
+    'Power Storage': {'name': 'power_storage', 'renewable': True},
+    'Solar': {'name': 'solar', 'renewable': True},
+    'Wind': {'name': 'wind', 'renewable': True},
 }
 
 
@@ -48,7 +24,7 @@ class Source(EntityBase):
     gen_sources = relationship("GenSource", back_populates="source")
 
     @staticmethod
-    def _resolve_energy_source(name: str) -> dict:
+    def metadata_for(name: str) -> dict:
         source_meta = energy_sources.get(name)
         if not source_meta:
             raise ValueError(f"Invalid energy source: {name}")
@@ -56,7 +32,7 @@ class Source(EntityBase):
 
     def __init__(self, name: str) -> None:
         super().__init__()
-        source_meta = self._resolve_energy_source(name)
+        source_meta = self.metadata_for(name)
         self.name = source_meta["name"]
         self.renewable = source_meta["renewable"]
 
@@ -72,10 +48,10 @@ class GenSource(EntityBase):
     source = relationship('Source', back_populates='gen_sources')
     gen_instant = relationship('GenInstant', back_populates='gen_sources')
 
-    def __init__(self, gen: float, source: str) -> None:
+    def __init__(self, gen: float, source: Source) -> None:
         super().__init__()
         self.gen = gen
-        self.source = Source(source)
+        self.source = source
 
 
 class GenInstant(EntityBase):
@@ -89,16 +65,10 @@ class GenInstant(EntityBase):
         cascade="all, delete-orphan",
     )
 
-    def __init__(
-            self,
-            timestamp: str,
-            mix: dict[str, float]
-    ) -> None:
+    def __init__(self, timestamp: str, gen_sources: list[GenSource]) -> None:
         super().__init__()
         self.timestamp = timestamp
-        self.gen_sources = [
-            GenSource(gen=gen, source=source) for source, gen in mix.items()
-        ]
+        self.gen_sources = gen_sources
 
         # Compute derived values
         self.gen_total = sum(gs.gen for gs in self.gen_sources)
