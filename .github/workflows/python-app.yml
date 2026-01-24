@@ -37,3 +37,8 @@ jobs:
       - name: Test with pytest
         run: |
           pytest
+      - name: Test app runs
+        run: |
+          # optional: fail fast if something goes wrong
+          set -e
+          python -m src.main

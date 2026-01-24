@@ -6,8 +6,10 @@ services:
       - "8000:8000"
     volumes:
       - ercot:/usr/src/app/out
+      - ercot_db:/usr/src/app/data
     environment:
       - APP_MODE=prod
 
 volumes:
   ercot:
+  ercot_db:
