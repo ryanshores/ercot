@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 
 from src.models import energy as energy_models
 from src.schema import schema
-from src.service.db.source import get_source
+from src.service.db.source_service import get_source
 
 
 def get_source_gens(db: Session, source_name: str) -> List[type[energy_models.GenSource]]:

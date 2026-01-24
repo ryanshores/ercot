@@ -1,10 +1,13 @@
 import os
 import threading
 import time
+from typing import Iterator
 
 import schedule
 import uvicorn
+from sqlalchemy.orm import Session
 
+from src.db.database import SessionLocal
 from src.db_1 import get_conn, init_db, save_gen_mix
 from src.logger.logger import get_logger
 from src.router import app
@@ -24,6 +27,15 @@ def _init_db_connection():
     conn = get_conn()
     init_db(conn)
     return conn
+
+
+def get_db() -> Iterator[Session]:
+    """Dependency that yields a DB session and always closes it."""
+    db = SessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
 
 
 def _create_ercot_snapshot() -> Ercot:

@@ -1,7 +1,14 @@
 from sqlalchemy.orm import Session
 
 from src.models import energy as energy_models
+from src.models.energy import energy_sources
 from src.schema import schema
+
+
+def seed(db: Session):
+    for source in energy_sources.keys():
+        source_create = schema.SourceCreate(name=source)
+        create_source(db, source_create)
 
 
 def get_source(db: Session, name: str) -> energy_models.Source | None:
