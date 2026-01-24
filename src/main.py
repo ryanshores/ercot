@@ -5,10 +5,10 @@ import time
 import schedule
 import uvicorn
 
-from src.clients.ercot import Ercot
-from src.db import get_conn, init_db, save_gen_mix
-from src.logger import get_logger
+from src.db_1 import get_conn, init_db, save_gen_mix
+from src.logger.logger import get_logger
 from src.router import app
+from src.service.ercot import Ercot
 
 logger = get_logger(__name__)
 

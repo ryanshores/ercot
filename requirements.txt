@@ -8,3 +8,6 @@ uvicorn~=0.34.0
 flake8
 pytest
 httpx~=0.24.1
+sqlalchemy
+pydantic
+numpy
