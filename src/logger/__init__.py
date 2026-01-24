@@ -11,7 +11,7 @@ def get_logger(name):
     logger = logging.getLogger(name)
     if not logger.hasHandlers():
         handler = logging.StreamHandler()
-        formatter = logging.Formatter('%(levelname)-6s %(filename)s:%(funcName)s:%(lineno)d - %(message)s')
+        formatter = logging.Formatter('%(levelname)-6s %(message)s -> %(filename)s:%(funcName)s:%(lineno)d')
         handler.setFormatter(formatter)
         logger.addHandler(handler)
         logger.setLevel(logging.DEBUG)

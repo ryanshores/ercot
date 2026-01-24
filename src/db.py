@@ -1,7 +1,7 @@
 import sqlite3
 from pathlib import Path
 
-from logger import get_logger
+from src.logger import get_logger
 
 DEFAULT_DB_PATH = Path("data") / "ercot.db"
 SQL_FILES_PATH = Path(__file__).parent / "sql"

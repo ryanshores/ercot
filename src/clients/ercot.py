@@ -58,12 +58,12 @@ class Ercot:
         self.wind: float = 0.0
 
     def __enter__(self) -> 'Ercot':
-        logger.debug('Enter Ercot')
+        logger.debug('')
         self._process_gen_data()
         return self
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
-        logger.debug('Exit Ercot')
+        logger.debug('')
 
     @property
     def renewable_gen(self) -> float:
@@ -101,7 +101,7 @@ class Ercot:
 
     def _fetch_fuel_mix(self) -> None:
         """Fetch and extract the current generation mix from ERCOT API."""
-        logger.debug('_fetch_fuel_mix')
+        logger.debug('')
         response = requests.get(self.ERCOT_API_URL, timeout=self.REQUEST_TIMEOUT_SECONDS)
         response.raise_for_status()
         data = response.json()['data']
@@ -125,7 +125,8 @@ class Ercot:
         self.solar = float(self.mix[self.FUEL_KEYS["solar"]]['gen'])
         self.wind = float(self.mix[self.FUEL_KEYS["wind"]]['gen'])
 
-        logger.info(f'_fetch_fuel_mix {self.timestamp}')
+        logger.info(
+            f'{self.renewable_gen:.1f}/{self.total_gen:.1f}MW {self.renewable_pct:.1f}% Renewable ({self.timestamp})')
 
     def _prepare_chart_data(self) -> Tuple[List[str], List[float], List[str], List[float]]:
         """Prepare data for chart visualization."""
