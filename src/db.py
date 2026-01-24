@@ -27,17 +27,25 @@ def init_db(conn: sqlite3.Connection) -> None:
             conn.commit()
 
 
-def save_fuel_mix(
+def save_gen_mix(
         conn: sqlite3.Connection,
         timestamp: str,
-        fuel_mix: dict,
-        pct_renewable: float
-) -> None:
+        coal: float,
+        hydro: float,
+        nuclear: float,
+        natural_gas: float,
+        other: float,
+        power_storage: float,
+        solar: float,
+        wind: float) -> None:
     with conn:
         conn.execute(
-            "INSERT INTO fuel_mix (timestamp, fuel_mix, pct_renewable) "
-            "VALUES (?, ?, ?)",
-            (timestamp, str(fuel_mix), pct_renewable)
+            "INSERT INTO gen_mix (timestamp, coal, hydro, nuclear, natural_gas, other, power_storage, solar, wind) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
+            "ON CONFLICT (timestamp) DO UPDATE SET coal = excluded.coal, hydro = excluded.hydro, "
+            "nuclear = excluded.nuclear, natural_gas = excluded.natural_gas, other = excluded.other, "
+            "power_storage = excluded.power_storage, solar = excluded.solar, wind = excluded.wind",
+            (timestamp, coal, hydro, nuclear, natural_gas, other, power_storage, solar, wind)
         )
-        logger.info(f"Saved fuel mix for {timestamp}")
+        logger.info(f"Saved gen mix for {timestamp}")
         conn.commit()

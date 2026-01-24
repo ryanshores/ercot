@@ -1,12 +1,19 @@
 import datetime
-from typing import Dict, List, Tuple
+from typing import Dict, List, Tuple, Any
 
+import numpy as np
 import requests
 from matplotlib import pyplot as plt
 
 from src.logger import get_logger
 
 logger = get_logger(__name__)
+
+
+def _latest_key(mapping: Dict[str, Any]) -> str:
+    if not mapping:
+        raise ValueError("ERCOT API returned an empty data structure.")
+    return max(mapping.keys())
 
 
 class Ercot:
@@ -16,6 +23,18 @@ class Ercot:
     DATE_FORMAT = '%Y-%m-%d %H:%M:%S-%f'
     DISPLAY_DATE_FORMAT = '%b %d, %Y %I:%M %p'
     ERCOT_API_URL = 'https://www.ercot.com/api/1/services/read/dashboards/fuel-mix.json'
+    REQUEST_TIMEOUT_SECONDS = 15
+
+    FUEL_KEYS = {
+        "coal": "Coal and Lignite",
+        "hydro": "Hydro",
+        "natural_gas": "Natural Gas",
+        "nuclear": "Nuclear",
+        "other": "Other",
+        "power_storage": "Power Storage",
+        "solar": "Solar",
+        "wind": "Wind",
+    }
 
     def __init__(self, image_file: str = None) -> None:
         """
@@ -25,10 +44,18 @@ class Ercot:
         """
         self.image_file = image_file or 'ercot_mix.png'
         self.timestamp: str = ""
-        self.mix: Dict = {}
-        self.pct_renewable: float = 0.0
+        self.mix: Dict[str, Dict[str, Any]] = {}
         self.title: str = ""
         self.message: str = ""
+
+        self.coal: float = 0.0
+        self.hydro: float = 0.0
+        self.natural_gas: float = 0.0
+        self.nuclear: float = 0.0
+        self.other: float = 0.0
+        self.power_storage: float = 0.0
+        self.solar: float = 0.0
+        self.wind: float = 0.0
 
     def __enter__(self) -> 'Ercot':
         logger.debug('Enter Ercot')
@@ -37,39 +64,68 @@ class Ercot:
 
     def __exit__(self, exc_type, exc_value, traceback) -> None:
         logger.debug('Exit Ercot')
-        pass
+
+    @property
+    def renewable_gen(self) -> float:
+        return self.hydro + self.nuclear + self.power_storage + self.solar + self.wind
+
+    @property
+    def total_gen(self) -> float:
+        return (
+                self.coal
+                + self.hydro
+                + self.natural_gas
+                + self.nuclear
+                + self.other
+                + self.power_storage
+                + self.solar
+                + self.wind
+        )
+
+    @property
+    def renewable_pct(self) -> float:
+        return self.renewable_gen / self.total_gen * 100 if self.total_gen else 0
+
+    @property
+    def png_file_name(self) -> str:
+        return f'{self.timestamp}.png'
+
+    def _output_path(self) -> str:
+        file_name = self.png_file_name if self.timestamp else self.image_file
+        return f'out/{file_name}'
 
     def _process_gen_data(self) -> None:
         """Process fuel mix data and generate visualization."""
         self._fetch_fuel_mix()
-        self._calculate_renewables()
         self._generate_text()
 
     def _fetch_fuel_mix(self) -> None:
         """Fetch and extract the current generation mix from ERCOT API."""
         logger.debug('_fetch_fuel_mix')
-        response = requests.get(self.ERCOT_API_URL)
+        response = requests.get(self.ERCOT_API_URL, timeout=self.REQUEST_TIMEOUT_SECONDS)
+        response.raise_for_status()
         data = response.json()['data']
 
-        # Get the current day's fuel mix
-        current_day_key = list(data.keys())[-1]
+        # Get the most recent day's fuel mix
+        current_day_key = _latest_key(data)
         current_day_mix = data[current_day_key]
-        current_mix_key = list(current_day_mix.keys())[-1]
 
-        # Get the current time mix
+        # Get the most recent time mix
+        current_mix_key = _latest_key(current_day_mix)
         self.mix = current_day_mix[current_mix_key]
         self.timestamp = current_mix_key
+
+        # Populate fields from the response using a single source of truth for keys
+        self.coal = float(self.mix[self.FUEL_KEYS["coal"]]['gen'])
+        self.hydro = float(self.mix[self.FUEL_KEYS["hydro"]]['gen'])
+        self.natural_gas = float(self.mix[self.FUEL_KEYS["natural_gas"]]['gen'])
+        self.nuclear = float(self.mix[self.FUEL_KEYS["nuclear"]]['gen'])
+        self.other = float(self.mix[self.FUEL_KEYS["other"]]['gen'])
+        self.power_storage = float(self.mix[self.FUEL_KEYS["power_storage"]]['gen'])
+        self.solar = float(self.mix[self.FUEL_KEYS["solar"]]['gen'])
+        self.wind = float(self.mix[self.FUEL_KEYS["wind"]]['gen'])
+
         logger.info(f'_fetch_fuel_mix {self.timestamp}')
-
-    def _calculate_renewables(self) -> None:
-        """Calculate the percentage of renewable energy in the mix."""
-        total_mw = sum(entry['gen'] for entry in self.mix.values())
-        renewable_mw = sum(
-            entry['gen'] for key, entry in self.mix.items()
-            if key in self.RENEWABLE_SOURCES)
-
-        self.pct_renewable = (renewable_mw / total_mw * 100) if total_mw else 0
-        logger.info(f"{renewable_mw:.0f}/{total_mw:.0f} {self.pct_renewable:.0f}% renewable")
 
     def _prepare_chart_data(self) -> Tuple[List[str], List[float], List[str], List[float]]:
         """Prepare data for chart visualization."""
@@ -83,16 +139,18 @@ class Ercot:
         explodes = [0.1 if label not in self.RENEWABLE_SOURCES else 0 for label in labels]
         return labels, values, legend_labels, explodes
 
-    def _generate_text(self):
+    def _generate_text(self) -> None:
         """Generate formatted chart title with timestamp."""
         dt = datetime.datetime.strptime(self.timestamp, self.DATE_FORMAT)
         formatted_date = dt.strftime(self.DISPLAY_DATE_FORMAT)
-        total_mw = sum(entry['gen'] for entry in self.mix.values())
-        self.title = f"ERCOT Energy Mix | {formatted_date} using {total_mw:.1f} MW ({self.pct_renewable:.1f}% Renewable)"
-        self.message = f"Currently ERCOT is running on {self.pct_renewable:.2f}% renewable energy. #Texas #ERCOT #Renewables"
-
-    def _get_png_file_name(self) -> str:
-        return f'{self.timestamp}.png'
+        self.title = (
+            f"ERCOT Energy Mix | {formatted_date} using {self.total_gen:.1f} MW "
+            f"({self.renewable_pct:.1f}% Renewable)"
+        )
+        self.message = (
+            f"Currently ERCOT is running on {self.renewable_pct:.2f}% renewable energy. "
+            f"#Texas #ERCOT #Renewables"
+        )
 
     def create_visualization(self) -> None:
         """Generate and save the pie chart visualization."""
@@ -102,11 +160,11 @@ class Ercot:
         values = [max(value, 0) for value in values]
 
         plt.figure(figsize=self.FIGURE_SIZE)
-        colors = plt.get_cmap('tab20').colors
+        cmap = plt.get_cmap("tab20")
+        colors = cmap(np.linspace(0, 1, 20))  # (20, 4) RGBA array
         wedges, _ = plt.pie(values, explode=explodes, colors=colors, startangle=self.CHART_START_ANGLE)
 
-        img_file = f'{self.timestamp}.png' if self.timestamp else self.image_file
-        img_file = f'out/{img_file}'
+        img_file = self._output_path()
 
         plt.title(self.title)
         plt.legend(wedges, legend_labels, loc="center left", bbox_to_anchor=(1, 0.5))
