@@ -17,7 +17,7 @@ class Source(SourceBase):
         orm_mode = True
 
 
-class GenSourceBase(SourceBase):
+class GenSourceBase(BaseModel):
     gen: float
 
 
