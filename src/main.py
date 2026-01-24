@@ -1,58 +1,102 @@
 import os
 import threading
 import time
-import traceback
 
 import schedule
 import uvicorn
 
 from src.clients.ercot import Ercot
+from src.db import get_conn, init_db, save_gen_mix
 from src.logger import get_logger
 from src.router import app
 
 logger = get_logger(__name__)
 
-APP_MODE = os.getenv('APP_MODE', 'dev')
+MODE_DEV = "dev"
+MODE_PROD = "prod"
+
+SCHEDULE_EVERY_MINUTES = 15
+
+APP_MODE = os.getenv("APP_MODE", MODE_DEV)
 
 
-def run():
+def _init_db_connection():
+    conn = get_conn()
+    init_db(conn)
+    return conn
+
+
+def _create_ercot_snapshot() -> Ercot:
+    # Ercot implements __enter__/__exit__, so use it as a context manager.
+    with Ercot() as ercot:
+        ercot.create_visualization()
+        return ercot
+
+
+def _persist_gen_mix(conn, ercot: Ercot) -> None:
+    save_gen_mix(
+        conn,
+        ercot.timestamp,
+        ercot.coal,
+        ercot.hydro,
+        ercot.nuclear,
+        ercot.natural_gas,
+        ercot.other,
+        ercot.power_storage,
+        ercot.solar,
+        ercot.wind,
+    )
+
+
+def run() -> None:
     try:
-        with Ercot() as ercot_client:
-            ercot_client.create_visualization()
-    except Exception as e:
-        logger.error(f"Error in run: {e}")
+        conn = _init_db_connection()
+    except Exception:
+        logger.exception("Error connecting to database")
+        return
+
+    try:
+        ercot = _create_ercot_snapshot()
+    except Exception:
+        logger.exception("Error connecting to ERCOT")
+        return
+
+    try:
+        _persist_gen_mix(conn, ercot)
+    except Exception:
+        logger.exception("Error saving gen mix")
 
 
-def run_scheduler():
-    """
-    This function runs the scheduler in a loop.
-    """
-
+def run_scheduler() -> None:
+    """Run the scheduler loop."""
     try:
         run()  # Run immediately
-        schedule.every(2).hours.at(":00").do(run)
+        schedule.every(15).minutes.do(run)
 
-        logger.info("Running schedule. Will check every 2 hours.")
+        logger.info("Running schedule. Will check every %s minutes.", SCHEDULE_EVERY_MINUTES)
         while True:
             schedule.run_pending()
             time.sleep(1)
-    except Exception as e:
-        logger.error(f"Error in scheduled run: {e}")
-        traceback.print_exc()
+    except Exception:
+        logger.exception("Error in scheduled run")
 
 
-def main():
-    # Run once if not in production mode
-    if APP_MODE == 'dev':
+def _start_scheduler_thread() -> None:
+    scheduler_thread = threading.Thread(target=run_scheduler, daemon=True)
+    scheduler_thread.start()
+
+
+def main() -> None:
+    if APP_MODE == MODE_DEV:
         run()
-    elif APP_MODE == 'prod':
-        # Start the scheduler in a background thread
-        target = run_scheduler if APP_MODE == 'prod' else run
-        scheduler_thread = threading.Thread(target=target, daemon=True)
-        scheduler_thread.start()
+        return
 
-        # Run the FastAPI server
+    if APP_MODE == MODE_PROD:
+        _start_scheduler_thread()
         uvicorn.run(app, host="0.0.0.0", port=8000)
+        return
+
+    logger.warning("Unknown APP_MODE=%r; expected %r or %r.", APP_MODE, MODE_DEV, MODE_PROD)
 
 
 # ==== STARTUP ====
