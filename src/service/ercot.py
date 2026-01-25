@@ -5,7 +5,7 @@ import numpy as np
 import requests
 from matplotlib import pyplot as plt
 
-from src.logger import get_logger
+from src.logger.logger import get_logger
 
 logger = get_logger(__name__)
 
