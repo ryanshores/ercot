@@ -14,7 +14,7 @@ class Source(SourceBase):
     renewable: bool
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class GenSourceBase(BaseModel):
@@ -31,7 +31,7 @@ class GenSource(GenSourceBase):
     source_id: int
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class GenInstantBase(BaseModel):
@@ -47,4 +47,4 @@ class GenInstant(GenInstantBase):
     gen_sources: list[GenSource] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True

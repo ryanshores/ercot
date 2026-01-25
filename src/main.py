@@ -7,11 +7,15 @@ import schedule
 import uvicorn
 from sqlalchemy.orm import Session
 
-from src.db.database import SessionLocal
+from src.db.database import SessionLocal, engine, Base
 from src.db_1 import get_conn, init_db, save_gen_mix
 from src.logger.logger import get_logger
 from src.router import app
+from src.schema import schema
+from src.service.db.gen_instant import create_gen_instant, GenInstantAlreadyExistsError
 from src.service.ercot import Ercot
+
+Base.metadata.create_all(bind=engine)
 
 logger = get_logger(__name__)
 
@@ -45,7 +49,7 @@ def _create_ercot_snapshot() -> Ercot:
         return ercot
 
 
-def _persist_gen_mix(conn, ercot: Ercot) -> None:
+def _persist_gen_mix_old(conn, ercot: Ercot) -> None:
     save_gen_mix(
         conn,
         ercot.timestamp,
@@ -58,6 +62,19 @@ def _persist_gen_mix(conn, ercot: Ercot) -> None:
         ercot.solar,
         ercot.wind,
     )
+
+
+def _persist_gen_mix(ercot: Ercot) -> None:
+    mix = {key: value['gen'] for key, value in ercot.mix.items()}
+    gen_instant = schema.GenInstantCreate(
+        timestamp=ercot.timestamp,
+        sources=mix
+    )
+    try:
+        create_gen_instant(next(get_db()), gen_instant)
+        logger.info("Saved gen instant for timestamp=%r", gen_instant.timestamp)
+    except GenInstantAlreadyExistsError:
+        logger.warning("GenInstantAlreadyExistsError for timestamp=%r", gen_instant.timestamp)
 
 
 def run() -> None:
@@ -74,9 +91,14 @@ def run() -> None:
         return
 
     try:
-        _persist_gen_mix(conn, ercot)
+        _persist_gen_mix_old(conn, ercot)
     except Exception:
         logger.exception("Error saving gen mix")
+
+    try:
+        _persist_gen_mix(ercot)
+    except Exception:
+        logger.exception("Error saving gen instant")
 
 
 def run_scheduler() -> None:
