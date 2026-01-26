@@ -18,14 +18,15 @@ def get_gen_instant(db: Session, timestamp: str) -> GenInstant | None:
     return db.query(GenInstant).filter(GenInstant.timestamp == timestamp).first()
 
 
-def get_last_x_gen_instants(db: Session, n: int) -> list[type[GenInstant]]:
+def get_last_x_gen_instants(db: Session, n: int) -> list[GenInstant]:
     return db.query(GenInstant).order_by(GenInstant.timestamp.desc()).limit(n).all()
 
 
-def get_by_dates(db: Session, start_time: datetime, end_time: datetime) -> list[type[GenInstant]]:
+def get_by_dates(db: Session, start_time: datetime, end_time: datetime) -> list[GenInstant]:
     return db.query(GenInstant).filter(
-        GenInstant.created_at >= start_time).filter(
-        GenInstant.created_at <= end_time).all()
+        GenInstant.created_at >= start_time,
+        GenInstant.created_at <= end_time
+    ).all()
 
 
 def create_gen_instant(db: Session, gen_instant: schema.GenInstantCreate) -> GenInstant:

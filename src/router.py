@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta, UTC
 from pathlib import Path
 
 from fastapi import Depends
@@ -9,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from src.db.database import get_db
-from src.service.db.gen_instant import get_by_dates
+from src.service.dashboard_service import DashboardService
 
 # Project root (../ from this file because this file lives in src/)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -73,90 +72,7 @@ def dashboard(
     """
     UI dashboard to view the data over time.
     """
-    # Map units to days for conversion
-    unit_map = {'D': 1, 'W': 7, 'M': 30, 'Y': 365}
-    try:
-        unit = timespan[-1].upper()
-        amount = int(timespan[:-1])
-        delta_days = amount * unit_map.get(unit, 0)
-    except (ValueError, IndexError):
-        delta_days = 0
-
-    if delta_days == 0:
-        delta_days = 5
-
-    # Compute start and end timestamps
-    end_time = datetime.now(UTC)
-    start_time = end_time - timedelta(days=delta_days)
-
-    # Fetch and reverse entries for chronological order
-    instants = get_by_dates(db, start_time, end_time)
-
-    # Prepare data for Chart.js
-    labels = [i.timestamp for i in instants]
-
-    # Map source_name -> list of generation values (aligned with instants)
-    source_data_map = {}
-
-    for i_idx, instant in enumerate(instants):
-        for gs in instant.gen_sources:
-            name = gs.source.name
-            if name not in source_data_map:
-                source_data_map[name] = [0] * len(instants)
-            source_data_map[name][i_idx] = gs.gen
-
-    # Define a custom order
-    custom_order = [
-        'nuclear',
-        'coal',
-        'natural_gas',
-        'other',
-        'hydro',
-        'solar',
-        'wind',
-        'power_storage'
-    ]
-
-    datasets = []
-    seen_sources = list(source_data_map.keys())
-
-    for source_name in custom_order:
-        if source_name in seen_sources:
-            if source_name == 'power_storage':
-                data = source_data_map[source_name]
-                # create two data streams using data with positive or 0 values in one and negative or 0 in the other
-                positive_data = [value if value > 0 else 0 for value in data]
-                negative_data = [value if value < 0 else -0.001 for value in data]
-                datasets.append({
-                    "label": source_name + "_charging",
-                    "data": positive_data,
-                    "fill": '-1',
-                    "order": custom_order.index(source_name)
-                })
-
-                datasets.append({
-                    "label": source_name + "_discharging",
-                    "data": negative_data,
-                    "fill": True,
-                    "order": custom_order.index(source_name) + 1
-                })
-            else:
-                datasets.append({
-                    "label": source_name,
-                    "data": source_data_map[source_name],
-                    "fill": True if len(datasets) == 0 else '-1',
-                    "order": custom_order.index(source_name)
-                })
-            seen_sources.remove(source_name)
-
-    # Add any remaining sources
-    for source_name in sorted(list(seen_sources)):
-        datasets.append({
-            "label": source_name,
-            "data": source_data_map[source_name],
-            "fill": '-1',
-            "order": 99
-        })
+    labels, datasets = DashboardService.get_dashboard_data(db, timespan)
 
     return templates.TemplateResponse(
         request,

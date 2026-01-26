@@ -15,7 +15,7 @@ def get_source(db: Session, name: str) -> energy_models.Source | None:
     return db.query(energy_models.Source).filter(energy_models.Source.name == name).first()
 
 
-def get_sources(db: Session) -> list[type[energy_models.Source]]:
+def get_sources(db: Session) -> list[energy_models.Source]:
     return db.query(energy_models.Source).all()
 
 

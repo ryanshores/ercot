@@ -7,7 +7,7 @@ from src.schema import schema
 from src.service.db.source_service import get_source, get_or_create_source
 
 
-def get_source_gens(db: Session, source_name: str) -> List[type[energy_models.GenSource]]:
+def get_source_gens(db: Session, source_name: str) -> List[energy_models.GenSource]:
     source = get_source(db, source_name)
     if source is None:
         raise ValueError(f"Source '{source_name}' not found")
