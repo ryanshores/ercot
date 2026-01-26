@@ -19,7 +19,7 @@ logger = get_logger(__name__)
 MODE_DEV = "dev"
 MODE_PROD = "prod"
 
-SCHEDULE_EVERY_MINUTES = 15
+SCHEDULE_EVERY_MINUTES = 5
 
 APP_MODE = os.getenv("APP_MODE", MODE_DEV)
 
@@ -63,7 +63,9 @@ def run_scheduler() -> None:
     """Run the scheduler loop."""
     try:
         run()  # Run immediately
-        schedule.every(15).minutes.at(":00").do(run)
+        tr = list(range(0, 60, SCHEDULE_EVERY_MINUTES))
+        for t in tr:
+            schedule.every().hour.at(f":{t:02d}").do(run)
 
         logger.info("Running schedule. Will check every %s minutes.", SCHEDULE_EVERY_MINUTES)
         while True:
