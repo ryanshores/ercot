@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, UTC
 from pathlib import Path
 
 from fastapi import Depends
@@ -86,7 +86,7 @@ def dashboard(
         delta_days = 5
 
     # Compute start and end timestamps
-    end_time = datetime.now(timezone.utc)
+    end_time = datetime.now(UTC)
     start_time = end_time - timedelta(days=delta_days)
 
     # Fetch and reverse entries for chronological order
@@ -95,9 +95,6 @@ def dashboard(
     # Prepare data for Chart.js
     labels = [i.timestamp for i in instants]
 
-    # Collect and categorize source names and their data in a single pass
-    non_renewable_sources = set()
-    renewable_sources = set()
     # Map source_name -> list of generation values (aligned with instants)
     source_data_map = {}
 
@@ -106,26 +103,59 @@ def dashboard(
             name = gs.source.name
             if name not in source_data_map:
                 source_data_map[name] = [0] * len(instants)
-                if gs.source.renewable:
-                    renewable_sources.add(name)
-                else:
-                    non_renewable_sources.add(name)
             source_data_map[name][i_idx] = gs.gen
 
-    # Build datasets: Non-renewable first, then Renewable, both sorted alphabetically
-    datasets = []
-    for source_name in sorted(non_renewable_sources):
-        datasets.append({
-            "label": source_name,
-            "data": source_data_map[source_name],
-            "fill": True
-        })
+    # Define a custom order
+    custom_order = [
+        'nuclear',
+        'coal',
+        'natural_gas',
+        'other',
+        'hydro',
+        'solar',
+        'wind',
+        'power_storage'
+    ]
 
-    for source_name in sorted(renewable_sources):
+    datasets = []
+    seen_sources = list(source_data_map.keys())
+
+    for source_name in custom_order:
+        if source_name in seen_sources:
+            if source_name == 'power_storage':
+                data = source_data_map[source_name]
+                # create two data streams using data with positive or 0 values in one and negative or 0 in the other
+                positive_data = [value if value > 0 else 0 for value in data]
+                negative_data = [value if value < 0 else -0.001 for value in data]
+                datasets.append({
+                    "label": source_name + "_charging",
+                    "data": positive_data,
+                    "fill": '-1',
+                    "order": custom_order.index(source_name)
+                })
+
+                datasets.append({
+                    "label": source_name + "_discharging",
+                    "data": negative_data,
+                    "fill": True,
+                    "order": custom_order.index(source_name) + 1
+                })
+            else:
+                datasets.append({
+                    "label": source_name,
+                    "data": source_data_map[source_name],
+                    "fill": True if len(datasets) == 0 else '-1',
+                    "order": custom_order.index(source_name)
+                })
+            seen_sources.remove(source_name)
+
+    # Add any remaining sources
+    for source_name in sorted(list(seen_sources)):
         datasets.append({
             "label": source_name,
             "data": source_data_map[source_name],
-            "fill": '-1'
+            "fill": '-1',
+            "order": 99
         })
 
     return templates.TemplateResponse(

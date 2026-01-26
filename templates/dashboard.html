@@ -39,8 +39,8 @@
             'r': 0,
             'g': 0,
             'b': 0,
-            'a': 0.8,
-            'a_bg': 0,
+            'a': 1,
+            'a_bg': 0.2,
         },
         'natural_gas': {
             'r': 153,
@@ -70,11 +70,18 @@
             'a': 1,
             'a_bg': 0.2,
         },
-        'power_storage': {
+        'power_storage_charging': {
             'r': 255,
             'g': 99,
             'b': 132,
             'a': 1,
+            'a_bg': 0.2,
+        },
+        'power_storage_discharging': {
+            'r': 255,
+            'g': 80,
+            'b': 120,
+            'a': 0.8,
             'a_bg': 0.2,
         },
         'solar': {
@@ -139,7 +146,8 @@
                         display: true,
                         text: 'Generation (MW)'
                     },
-                    stacked: true
+                    stacked: true,
+                    beginAtZero: true
                 }
             },
             plugins: {
@@ -150,6 +158,9 @@
             elements: {
                 line: {
                     tension: 0.4
+                },
+                point: {
+                    pointStyle: 'cross'
                 }
             }
         }
