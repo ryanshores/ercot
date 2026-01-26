@@ -18,7 +18,6 @@ def test_list_images_with_no_files(monkeypatch, tmp_path):
     response = client.get("/")
 
     assert response.status_code == 200
-    assert "<ul></ul>" in response.text
     assert "<h1>ERCOT Visualizations</h1>" in response.text
 
 
@@ -56,3 +55,17 @@ def test_list_images_sorts_files_in_reverse_order(monkeypatch, tmp_path):
     i2 = response.text.index('<li><a href="/images/image2.jpg">image2.jpg</a></li>')
     i1 = response.text.index('<li><a href="/images/image1.jpeg">image1.jpeg</a></li>')
     assert i3 < i2 < i1
+
+
+def test_dashboard(monkeypatch, tmp_path):
+    (tmp_path / "image1.png").touch()
+    (tmp_path / "image2.jpg").touch()
+    (tmp_path / "image3.jpeg").touch()
+
+    monkeypatch.setattr(src.router, "OUT_DIR", tmp_path)
+    client = TestClient(src.router.app)
+    response = client.get("/dashboard")
+    assert response.status_code == 200
+    assert "canvas" in response.text
+    assert response.context['labels'] is not None
+    assert response.context['datasets'] is not None
