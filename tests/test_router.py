@@ -58,13 +58,7 @@ def test_list_images_sorts_files_in_reverse_order(monkeypatch, tmp_path):
     assert i3 < i2 < i1
 
 
-def test_dashboard(monkeypatch, tmp_path, db_session: Session):
-    (tmp_path / "image1.png").touch()
-    (tmp_path / "image2.jpg").touch()
-    (tmp_path / "image3.jpeg").touch()
-
-    monkeypatch.setattr(src.router, "OUT_DIR", tmp_path)
-
+def test_dashboard(db_session: Session):
     # Use dependency_overrides to inject the test database session
     src.router.app.dependency_overrides[src.router.get_db] = lambda: db_session
 
@@ -75,6 +69,10 @@ def test_dashboard(monkeypatch, tmp_path, db_session: Session):
         assert "canvas" in response.text
         assert response.context['labels'] is not None
         assert response.context['datasets'] is not None
+
+        # Verify that datasets have fill: True
+        for dataset in response.context['datasets']:
+            assert dataset['fill']
     finally:
         # Clean up overrides to avoid affecting other tests
         src.router.app.dependency_overrides.clear()
