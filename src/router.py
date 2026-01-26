@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
-from src.db.database import SessionLocal
+from src.db.database import get_db
 from src.models import energy as energy_models
 
 # Project root (../ from this file because this file lives in src/)
@@ -23,14 +23,6 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # Mount the 'out' folder to be served at '/images'
 app.mount("/images", StaticFiles(directory=str(OUT_DIR)), name="images")
-
-
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 @app.get("/", response_class=HTMLResponse)

@@ -1,20 +1,18 @@
 import os
 import threading
 import time
-from typing import Iterator
 
 import schedule
 import uvicorn
-from sqlalchemy.orm import Session
 
-from src.db.database import SessionLocal, engine, Base
+from src.db.database import SessionLocal, init_db
 from src.logger.logger import get_logger
 from src.router import app
 from src.schema import schema
 from src.service.db.gen_instant import create_gen_instant, GenInstantAlreadyExistsError
 from src.service.ercot import Ercot
 
-Base.metadata.create_all(bind=engine)
+init_db()
 
 logger = get_logger(__name__)
 
@@ -24,15 +22,6 @@ MODE_PROD = "prod"
 SCHEDULE_EVERY_MINUTES = 15
 
 APP_MODE = os.getenv("APP_MODE", MODE_DEV)
-
-
-def get_db() -> Iterator[Session]:
-    """Dependency that yields a DB session and always closes it."""
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
 
 def _create_ercot_snapshot() -> Ercot:
@@ -49,7 +38,8 @@ def _persist_gen_mix(ercot: Ercot) -> None:
         sources=mix
     )
     try:
-        create_gen_instant(next(get_db()), gen_instant)
+        with SessionLocal() as db:
+            create_gen_instant(db, gen_instant)
         logger.info("Saved gen instant for timestamp=%r", gen_instant.timestamp)
     except GenInstantAlreadyExistsError:
         logger.warning("GenInstantAlreadyExistsError for timestamp=%r", gen_instant.timestamp)
