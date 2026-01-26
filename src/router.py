@@ -25,6 +25,9 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 app.mount("/images", StaticFiles(directory=str(OUT_DIR)), name="images")
 
 
+cache_header = {"Cache-Control": f"max-age={60*5}, must-revalidate"}
+
+
 @app.get("/", response_class=HTMLResponse)
 def list_images(
         request: Request,
@@ -60,7 +63,8 @@ def list_images(
             "sort": sort,
             "total": total,
             "total_pages": (total + page_size - 1) // page_size
-        }
+        },
+        headers=cache_header
     )
 
 
@@ -80,5 +84,6 @@ def dashboard(
         {
             "labels": labels,
             "datasets": datasets
-        }
+        },
+        headers=cache_header
     )
