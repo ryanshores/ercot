@@ -16,8 +16,8 @@ class DashboardService:
         'natural_gas',
         'other',
         'hydro',
-        'solar',
         'wind',
+        'solar',
         'power_storage'
     ]
 
