@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class SourceBase(BaseModel):
@@ -13,8 +13,7 @@ class Source(SourceBase):
     id: int
     renewable: bool
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GenSourceBase(BaseModel):
@@ -30,8 +29,7 @@ class GenSource(GenSourceBase):
     gen_instant_id: int
     source_id: int
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class GenInstantBase(BaseModel):
@@ -46,5 +44,4 @@ class GenInstant(GenInstantBase):
     id: int
     gen_sources: list[GenSource] = []
 
-    class Config:
-        from_attributes = True
+    model_config = ConfigDict(from_attributes=True)

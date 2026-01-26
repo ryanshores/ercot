@@ -59,9 +59,9 @@ def list_images(
     paginated_files = files[start:end]
 
     return templates.TemplateResponse(
+        request,
         "images.html",
         {
-            "request": request,
             "files": paginated_files,
             "page": page,
             "page_size": page_size,
@@ -110,9 +110,9 @@ def dashboard(request: Request, db: Session = Depends(get_db)):
         })
 
     return templates.TemplateResponse(
+        request,
         "dashboard.html",
         {
-            "request": request,
             "labels": labels,
             "datasets": datasets
         }

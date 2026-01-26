@@ -64,10 +64,17 @@ def test_dashboard(monkeypatch, tmp_path, db_session: Session):
     (tmp_path / "image3.jpeg").touch()
 
     monkeypatch.setattr(src.router, "OUT_DIR", tmp_path)
-    monkeypatch.setattr(src.router, "get_db", lambda: db_session)
-    client = TestClient(src.router.app)
-    response = client.get("/dashboard")
-    assert response.status_code == 200
-    assert "canvas" in response.text
-    assert response.context['labels'] is not None
-    assert response.context['datasets'] is not None
+    
+    # Use dependency_overrides to inject the test database session
+    src.router.app.dependency_overrides[src.router.get_db] = lambda: db_session
+    
+    try:
+        client = TestClient(src.router.app)
+        response = client.get("/dashboard")
+        assert response.status_code == 200
+        assert "canvas" in response.text
+        assert response.context['labels'] is not None
+        assert response.context['datasets'] is not None
+    finally:
+        # Clean up overrides to avoid affecting other tests
+        src.router.app.dependency_overrides.clear()
