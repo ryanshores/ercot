@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from sqlalchemy.orm import Session
 
@@ -11,7 +11,7 @@ valid_data = {key: 10 for key in energy_sources}
 
 def _generate_valid_data():
     return schema.GenInstantCreate(
-        timestamp=datetime.now(timezone.utc).isoformat(),
+        timestamp=datetime.now(UTC).isoformat(),
         sources={key: 10 for key in energy_sources}
     )
 

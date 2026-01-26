@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 from typing import Dict, List, Tuple, Any
 
 import numpy as np
@@ -142,7 +142,7 @@ class Ercot:
 
     def _generate_text(self) -> None:
         """Generate formatted chart title with timestamp."""
-        dt = datetime.datetime.strptime(self.timestamp, self.DATE_FORMAT)
+        dt = datetime.strptime(self.timestamp, self.DATE_FORMAT)
         formatted_date = dt.strftime(self.DISPLAY_DATE_FORMAT)
         self.title = (
             f"ERCOT Energy Mix | {formatted_date} using {self.total_gen:.1f} MW "

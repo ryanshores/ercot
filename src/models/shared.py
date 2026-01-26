@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, UTC
 
 from sqlalchemy import Column, Integer, DateTime
 
@@ -9,7 +9,7 @@ class EntityBase(Base):
     __abstract__ = True
     id = Column(Integer, primary_key=True, index=True)
     created_at = Column(DateTime(timezone=True),
-                        default=lambda: datetime.now(timezone.utc))
+                        default=lambda: datetime.now(UTC))
     updated_at = Column(DateTime(timezone=True),
-                        default=lambda: datetime.now(timezone.utc),
-                        onupdate=lambda: datetime.now(timezone.utc))
+                        default=lambda: datetime.now(UTC),
+                        onupdate=lambda: datetime.now(UTC))

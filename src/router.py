@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 from fastapi import Depends
@@ -9,7 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from src.db.database import get_db
-from src.service.db.gen_instant import get_by_dates
+from src.service.dashboard_service import DashboardService
 
 # Project root (../ from this file because this file lives in src/)
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
@@ -73,60 +72,7 @@ def dashboard(
     """
     UI dashboard to view the data over time.
     """
-    # Map units to days for conversion
-    unit_map = {'D': 1, 'W': 7, 'M': 30, 'Y': 365}
-    try:
-        unit = timespan[-1].upper()
-        amount = int(timespan[:-1])
-        delta_days = amount * unit_map.get(unit, 0)
-    except (ValueError, IndexError):
-        delta_days = 0
-
-    if delta_days == 0:
-        delta_days = 5
-
-    # Compute start and end timestamps
-    end_time = datetime.now(timezone.utc)
-    start_time = end_time - timedelta(days=delta_days)
-
-    # Fetch and reverse entries for chronological order
-    instants = get_by_dates(db, start_time, end_time)
-
-    # Prepare data for Chart.js
-    labels = [i.timestamp for i in instants]
-
-    # Collect and categorize source names and their data in a single pass
-    non_renewable_sources = set()
-    renewable_sources = set()
-    # Map source_name -> list of generation values (aligned with instants)
-    source_data_map = {}
-
-    for i_idx, instant in enumerate(instants):
-        for gs in instant.gen_sources:
-            name = gs.source.name
-            if name not in source_data_map:
-                source_data_map[name] = [0] * len(instants)
-                if gs.source.renewable:
-                    renewable_sources.add(name)
-                else:
-                    non_renewable_sources.add(name)
-            source_data_map[name][i_idx] = gs.gen
-
-    # Build datasets: Non-renewable first, then Renewable, both sorted alphabetically
-    datasets = []
-    for source_name in sorted(non_renewable_sources):
-        datasets.append({
-            "label": source_name,
-            "data": source_data_map[source_name],
-            "fill": True
-        })
-
-    for source_name in sorted(renewable_sources):
-        datasets.append({
-            "label": source_name,
-            "data": source_data_map[source_name],
-            "fill": '-1'
-        })
+    labels, datasets = DashboardService.get_dashboard_data(db, timespan)
 
     return templates.TemplateResponse(
         request,
