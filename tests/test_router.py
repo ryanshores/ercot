@@ -1,4 +1,5 @@
 from fastapi.testclient import TestClient
+from sqlalchemy.orm import Session
 
 import src.router
 
@@ -57,12 +58,13 @@ def test_list_images_sorts_files_in_reverse_order(monkeypatch, tmp_path):
     assert i3 < i2 < i1
 
 
-def test_dashboard(monkeypatch, tmp_path):
+def test_dashboard(monkeypatch, tmp_path, db_session: Session):
     (tmp_path / "image1.png").touch()
     (tmp_path / "image2.jpg").touch()
     (tmp_path / "image3.jpeg").touch()
 
     monkeypatch.setattr(src.router, "OUT_DIR", tmp_path)
+    monkeypatch.setattr(src.router, "get_db", lambda: db_session)
     client = TestClient(src.router.app)
     response = client.get("/dashboard")
     assert response.status_code == 200
