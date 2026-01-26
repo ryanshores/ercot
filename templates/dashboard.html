@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>ERCOT Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 2em;
+        }
+
+        .chart-container {
+            width: 80%;
+            margin: auto;
+        }
+
+        nav {
+            margin-bottom: 2em;
+        }
+    </style>
+</head>
+<body>
+<h1>ERCOT Generation Mix Over Time</h1>
+<nav>
+    <a href="/">View Images</a>
+</nav>
+<div class="chart-container">
+    <canvas id="genChart"></canvas>
+</div>
+
+<script>
+    const ctx = document.getElementById('genChart').getContext('2d');
+    const labels = {{ labels | tojson }}
+    const datasets = {{ datasets | tojson }}
+
+    // Add some colors to datasets
+    const colors = [
+        'rgb(0, 0, 0)',
+        'rgb(54, 162, 235)',
+        'rgb(255, 159, 64)',
+        'rgb(153, 102, 255)',
+        'rgb(201, 203, 207)',
+        'rgb(255, 99, 132)',
+        'rgb(255, 205, 86)',
+        'rgb(75, 192, 192)',
+    ];
+
+    datasets.forEach((dataset, index) => {
+        dataset.borderColor = colors[index % colors.length];
+        dataset.backgroundColor = colors[index % colors.length] + '80';
+    });
+
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: labels,
+            datasets: datasets
+        },
+        options: {
+            responsive: true,
+            scales: {
+                x: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Timestamp'
+                    }
+                },
+                y: {
+                    display: true,
+                    title: {
+                        display: true,
+                        text: 'Generation (MW)'
+                    }
+                }
+            }
+        }
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>ERCOT Images</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 2em;
+        }
+
+        .controls {
+            margin-bottom: 1em;
+        }
+
+        .pagination {
+            margin-top: 1em;
+        }
+
+        .pagination a {
+            margin-right: 0.5em;
+            text-decoration: none;
+            color: blue;
+        }
+
+        .pagination span {
+            margin-right: 0.5em;
+        }
+    </style>
+</head>
+<body>
+<h1>ERCOT Visualizations</h1>
+<nav>
+    <a href="/dashboard">View Dashboard</a>
+</nav>
+<div class="controls">
+    <form action="/" method="get">
+        <label for="sort-select">Sort By:</label>
+        <select id="sort-select" name="sort" onchange="this.form.submit()">
+            <option {% if sort=='desc' %}selected{% endif %}>Newest First</option>
+            <option {% if sort=='asc' %}selected{% endif %}>Oldest First</option>
+        </select>
+        <label for="page-size-select">Page Size:</label>
+        <select id="page-size-select" name="page_size" onchange="this.form.submit()">
+            <option {% if page_size==10 %}selected{% endif %}>10</option>
+            <option {% if page_size==20 %}selected{% endif %}>20</option>
+            <option {% if page_size==50 %}selected{% endif %}>50</option>
+        </select>
+        <input name="page" type="hidden" value="1">
+    </form>
+</div>
+<ul>
+    {% for file in files %}
+    <li><a href="/images/{{ file }}">{{ file }}</a></li>
+    {% endfor %}
+</ul>
+
+<div class="pagination">
+    {% if page > 1 %}
+    <a href="/?page={{ page - 1 }}&sort={{ sort }}&page_size={{ page_size }}">Previous</a>
+    {% endif %}
+    <span>Page {{ page }} of {{ total_pages }}</span>
+    {% if page < total_pages %}
+    <a href="/?page={{ page + 1 }}&sort={{ sort }}&page_size={{ page_size }}">Next</a>
+    {% endif %}
+</div>
+</body>
+</html>
