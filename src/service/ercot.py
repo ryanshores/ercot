@@ -5,10 +5,10 @@ import numpy as np
 import requests
 from matplotlib import pyplot as plt
 
-from db.database import SessionLocal
-from schema import schema
-from service.db.gen_instant import create_gen_instances
+from src.db.database import SessionLocal
 from src.logger.logger import get_logger
+from src.schema import schema
+from src.service.db.gen_instant import create_gen_instances
 
 logger = get_logger(__name__)
 
