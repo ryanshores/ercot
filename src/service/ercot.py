@@ -5,6 +5,9 @@ import numpy as np
 import requests
 from matplotlib import pyplot as plt
 
+from db.database import SessionLocal
+from schema import schema
+from service.db.gen_instant import create_gen_instances
 from src.logger.logger import get_logger
 
 logger = get_logger(__name__)
@@ -106,6 +109,8 @@ class Ercot:
         response.raise_for_status()
         data = response.json()['data']
 
+        self._process_gen_mixes(data)
+
         # Get the most recent day's fuel mix
         current_day_key = _latest_key(data)
         current_day_mix = data[current_day_key]
@@ -127,6 +132,24 @@ class Ercot:
 
         logger.info(
             f'{self.renewable_gen:.1f}/{self.total_gen:.1f}MW {self.renewable_pct:.1f}% Renewable ({self.timestamp})')
+
+    def _process_gen_mixes(self, data: Dict[str, Any]):
+        gen_instants = []
+        for day in data.values():
+            for timestamp, mix_data in day.items():
+                mix = {key: value['gen'] for key, value in mix_data.items()}
+                gen_instants.append(schema.GenInstantCreate(
+                    timestamp=timestamp,
+                    sources=mix
+                ))
+        try:
+            with SessionLocal() as db:
+                created_instances = create_gen_instances(db, gen_instants)
+                logger.info("Saved gen instances for %d timestamps", len(created_instances))
+        except Exception as e:
+            # use debug because this is expected
+            logger.warning(
+                f"Failed to save gen instances for {len(gen_instants)} timestamps: {e}")
 
     def _prepare_chart_data(self) -> Tuple[List[str], List[float], List[str], List[float]]:
         """Prepare data for chart visualization."""

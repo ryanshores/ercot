@@ -5,11 +5,9 @@ import time
 import schedule
 import uvicorn
 
-from src.db.database import SessionLocal, init_db
+from src.db.database import init_db
 from src.logger.logger import get_logger
 from src.router import app
-from src.schema import schema
-from src.service.db.gen_instant import create_gen_instant, GenInstantAlreadyExistsError
 from src.service.ercot import Ercot
 
 init_db()
@@ -19,44 +17,19 @@ logger = get_logger(__name__)
 MODE_DEV = "dev"
 MODE_PROD = "prod"
 
-SCHEDULE_EVERY_MINUTES = 5
+SCHEDULE_EVERY_MINUTES = 30
 
 APP_MODE = os.getenv("APP_MODE", MODE_DEV)
-
-
-def _create_ercot_snapshot() -> Ercot:
-    # Ercot implements __enter__/__exit__, so use it as a context manager.
-    with Ercot() as ercot:
-        ercot.create_visualization()
-        return ercot
-
-
-def _persist_gen_mix(ercot: Ercot) -> None:
-    mix = {key: value['gen'] for key, value in ercot.mix.items()}
-    gen_instant = schema.GenInstantCreate(
-        timestamp=ercot.timestamp,
-        sources=mix
-    )
-    try:
-        with SessionLocal() as db:
-            create_gen_instant(db, gen_instant)
-        logger.info("Saved gen instant for timestamp=%r", gen_instant.timestamp)
-    except GenInstantAlreadyExistsError:
-        logger.warning("GenInstantAlreadyExistsError for timestamp=%r", gen_instant.timestamp)
 
 
 def run() -> None:
 
     try:
-        ercot = _create_ercot_snapshot()
+        with Ercot() as ercot:
+            ercot.create_visualization()
     except Exception as e:
         logger.exception("Error connecting to ERCOT", exc_info=e)
         return
-    else:
-        try:
-            _persist_gen_mix(ercot)
-        except Exception as e:
-            logger.exception("Error saving gen instant", exc_info=e)
 
 
 def run_scheduler() -> None:
