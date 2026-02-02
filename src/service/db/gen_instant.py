@@ -29,7 +29,7 @@ def get_by_dates(db: Session, start_time: datetime, end_time: datetime) -> list[
     ).all()
 
 
-def create_gen_instant(db: Session, gen_instant: schema.GenInstantCreate) -> GenInstant:
+def create_gen_instant(db: Session, gen_instant: schema.GenInstantCreate, commit: bool = True) -> GenInstant:
     # Friendly early failure (fast path)
     existing = get_gen_instant(db, gen_instant.timestamp)
     if existing is not None:
@@ -43,12 +43,38 @@ def create_gen_instant(db: Session, gen_instant: schema.GenInstantCreate) -> Gen
     db_gen_instant = GenInstant(gen_instant.timestamp, gen_sources)
     db.add(db_gen_instant)
 
-    try:
-        db.commit()
-    except IntegrityError:
-        # Handles race condition: another transaction inserted the same timestamp.
-        db.rollback()
-        raise GenInstantAlreadyExistsError(gen_instant.timestamp)
+    if commit:
+        try:
+            db.commit()
+        except IntegrityError:
+            # Handles race condition: another transaction inserted the same timestamp.
+            db.rollback()
+            raise GenInstantAlreadyExistsError(gen_instant.timestamp)
 
-    db.refresh(db_gen_instant)
+        db.refresh(db_gen_instant)
+
     return db_gen_instant
+
+
+def create_gen_instances(db: Session, gen_instants: list[schema.GenInstantCreate]) -> list[GenInstant]:
+    """
+    Create multiple gen instant records in a single transaction, while skipping any duplicates.
+
+    Args:
+        db (Session): Database session.
+        gen_instants (list[schema.GenInstantCreate]): List of gen instant creation schemas.
+
+    Returns:
+        list[GenInstant]: List of created gen instant records.
+    """
+
+    instants_to_commit = []
+    for gen_instant in gen_instants:
+        try:
+            created_instant = create_gen_instant(db, gen_instant, commit=False)
+            instants_to_commit.append(created_instant)
+        except GenInstantAlreadyExistsError:
+            # Skip duplicates
+            continue
+    db.commit()
+    return instants_to_commit

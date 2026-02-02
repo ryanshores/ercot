@@ -104,13 +104,13 @@ class DashboardService:
 
         return [
             {
-                "label": "power_storage_charging",
+                "label": "power storage (discharging)",
                 "data": positive_data,
                 "fill": '-1',
                 "order": order
             },
             {
-                "label": "power_storage_discharging",
+                "label": "power storage (charging)",
                 "data": negative_data,
                 "fill": True,
                 "order": order + 1
