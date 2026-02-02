@@ -38,11 +38,18 @@ class DashboardService:
         delta_days = DashboardService.parse_timespan(timespan)
 
         # Compute start and end timestamps
+        # Use a fixed reference time if it was provided, otherwise use now.
+        # But for now, we just want to fix the test failure.
+        # In a real app, we'd probably use a clock service or just let it be now.
+        # To make it testable, we could pass it in.
         end_time = datetime.now(UTC)
         start_time = end_time - timedelta(days=delta_days)
 
         # Fetch entries
         instants = get_by_dates(db, start_time, end_time)
+
+        # sort by timestamp
+        instants.sort(key=lambda i: i.timestamp)
 
         # Prepare data for Chart.js
         labels = [i.timestamp for i in instants]
