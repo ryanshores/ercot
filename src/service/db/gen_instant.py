@@ -24,8 +24,8 @@ def get_last_x_gen_instants(db: Session, n: int) -> list[GenInstant]:
 
 def get_by_dates(db: Session, start_time: datetime, end_time: datetime) -> list[GenInstant]:
     return db.query(GenInstant).filter(
-        GenInstant.created_at >= start_time,
-        GenInstant.created_at <= end_time
+        GenInstant.timestamp >= start_time.isoformat(),
+        GenInstant.timestamp <= end_time.isoformat()
     ).all()
 
 

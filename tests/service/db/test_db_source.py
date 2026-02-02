@@ -14,6 +14,6 @@ def test_get_source(db_session: Session, seed_sources: None):
         assert db_source.renewable == test_source.renewable
 
 
-def test_get_sources(db_session: Session):
+def test_get_sources(db_session: Session, seed_sources: None):
     expected_length = len(energy_sources)
     assert len(source_service.get_sources(db_session)) == expected_length
