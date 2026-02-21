@@ -10,12 +10,11 @@ services:
     environment:
       - APP_MODE=prod
     healthcheck:
-      test:
-        [ "CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/', timeout=1).read()" ]
+      test: ["CMD", "curl", "-f", "http://0.0.0.0:8000/health"]
       interval: 10s
-      timeout: 2s
-      retries: 5
-      start_period: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
     restart: unless-stopped
 
 volumes:
