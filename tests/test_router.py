@@ -16,10 +16,10 @@ def test_list_images_with_no_files(monkeypatch, tmp_path):
     monkeypatch.setattr(src.router, "OUT_DIR", tmp_path)
 
     client = TestClient(src.router.app)
-    response = client.get("/")
+    response = client.get("/images")
 
     assert response.status_code == 200
-    assert "<h1>ERCOT Visualizations</h1>" in response.text
+    assert '<a href="/" class="nav-brand">🔌 ERCOT</a>' in response.text
 
 
 def test_list_images_with_files(monkeypatch, tmp_path):
@@ -31,12 +31,12 @@ def test_list_images_with_files(monkeypatch, tmp_path):
     monkeypatch.setattr(src.router, "OUT_DIR", tmp_path)
 
     client = TestClient(src.router.app)
-    response = client.get("/")
+    response = client.get("/images")
 
     assert response.status_code == 200
-    assert '<li><a href="/images/image1.png">image1.png</a></li>' in response.text
-    assert '<li><a href="/images/image2.jpg">image2.jpg</a></li>' in response.text
-    assert '<li><a href="/images/image3.jpeg">image3.jpeg</a></li>' in response.text
+    assert '/images/image1.png' in response.text
+    assert '/images/image2.jpg' in response.text
+    assert '/images/image3.jpeg' in response.text
 
 
 def test_list_images_sorts_files_in_reverse_order(monkeypatch, tmp_path):
@@ -48,13 +48,13 @@ def test_list_images_sorts_files_in_reverse_order(monkeypatch, tmp_path):
     monkeypatch.setattr(src.router, "OUT_DIR", tmp_path)
 
     client = TestClient(src.router.app)
-    response = client.get("/")
+    response = client.get("/images")
 
     assert response.status_code == 200
 
-    i3 = response.text.index('<li><a href="/images/image3.png">image3.png</a></li>')
-    i2 = response.text.index('<li><a href="/images/image2.jpg">image2.jpg</a></li>')
-    i1 = response.text.index('<li><a href="/images/image1.jpeg">image1.jpeg</a></li>')
+    i3 = response.text.index('/images/image3.png')
+    i2 = response.text.index('/images/image2.jpg')
+    i1 = response.text.index('/images/image1.jpeg')
     assert i3 < i2 < i1
 
 

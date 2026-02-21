@@ -30,6 +30,31 @@ cache_header = {"Cache-Control": f"max-age={60 * 5}, must-revalidate"}
 
 
 @app.get("/", response_class=HTMLResponse)
+def home(
+    request: Request,
+    days: int = 30,
+    view: str = "graph",  # 'graph' or 'table'
+    db: Session = Depends(get_db),
+):
+    """
+    Homepage showing daily generation overview.
+    """
+    chart_data, table_data = DashboardService.get_generation_by_day(db, days)
+
+    return templates.TemplateResponse(
+        request,
+        "home.html",
+        {
+            "chart_data": chart_data,
+            "table_data": table_data,
+            "days": days,
+            "view": view,
+        },
+        headers=cache_header,
+    )
+
+
+@app.get("/images", response_class=HTMLResponse)
 def list_images(
     request: Request, page: int = 1, page_size: int = 20, sort: str = "desc"
 ):
