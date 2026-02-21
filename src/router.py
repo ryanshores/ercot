@@ -20,6 +20,15 @@ TEMPLATES_DIR = PROJECT_ROOT / "templates"
 TEMPLATES_DIR.mkdir(exist_ok=True)
 
 app = FastAPI()
+
+
+# Healthcheck endpoint
+@app.get("/health", response_model=dict)
+def health_check():
+    """Simple health check endpoint returning status OK."""
+    return {"status": "ok"}
+
+
 templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 
 # Mount the 'out' folder to be served at '/images'
