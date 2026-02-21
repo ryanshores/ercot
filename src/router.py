@@ -21,21 +21,19 @@ TEMPLATES_DIR.mkdir(exist_ok=True)
 
 app = FastAPI()
 
+templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
+
+# Mount the 'out' folder to be served at '/images'
+app.mount("/images", StaticFiles(directory=str(OUT_DIR)), name="images")
+
+cache_header = {"Cache-Control": f"max-age={60 * 5}, must-revalidate"}
+
 
 # Healthcheck endpoint
 @app.get("/health", response_model=dict)
 def health_check():
     """Simple health check endpoint returning status OK."""
     return {"status": "ok"}
-
-
-templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
-
-# Mount the 'out' folder to be served at '/images'
-app.mount("/images", StaticFiles(directory=str(OUT_DIR)), name="images")
-
-
-cache_header = {"Cache-Control": f"max-age={60 * 5}, must-revalidate"}
 
 
 @app.get("/", response_class=HTMLResponse)
@@ -122,30 +120,5 @@ def dashboard(
         request,
         "dashboard.html",
         {"labels": labels, "datasets": datasets, "source_colors": source_colors},
-        headers=cache_header,
-    )
-
-
-@app.get("/generation-by-day", response_class=HTMLResponse)
-def generation_by_day(
-    request: Request,
-    days: int = 30,
-    view: str = "graph",  # 'graph' or 'table'
-    db: Session = Depends(get_db),
-):
-    """
-    UI dashboard to view total energy generation by day with renewable percentage.
-    """
-    chart_data, table_data = DashboardService.get_generation_by_day(db, days)
-
-    return templates.TemplateResponse(
-        request,
-        "generation_by_day.html",
-        {
-            "chart_data": chart_data,
-            "table_data": table_data,
-            "days": days,
-            "view": view,
-        },
         headers=cache_header,
     )
