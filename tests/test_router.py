@@ -16,7 +16,7 @@ def test_list_images_with_no_files(monkeypatch, tmp_path):
     monkeypatch.setattr(src.router, "OUT_DIR", tmp_path)
 
     client = TestClient(src.router.app)
-    response = client.get("/")
+    response = client.get("/images")
 
     assert response.status_code == 200
     assert '<a href="/" class="nav-brand">🔌 ERCOT</a>' in response.text
