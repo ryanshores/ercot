@@ -18,7 +18,12 @@ class TestTwitter:
     @pytest.fixture
     def twitter(self):
         """Fixture to create a Twitter client instance."""
-        return Twitter()
+        return Twitter(
+            "api_key",
+            "api_secret",
+            "access_token",
+            "access_secret",
+            "bearer_token")
 
     def test_twitter_credentials_configured(self, twitter):
         """Test that Twitter credentials are properly loaded from environment."""
@@ -30,7 +35,7 @@ class TestTwitter:
 
     def test_twitter_context_manager(self, twitter):
         """Test that Twitter context manager properly initializes tweepy v2 client."""
-        with Twitter() as twitter_client:
+        with twitter as twitter_client:
             assert twitter_client.client is not None, "Tweepy client not initialized"
             assert isinstance(twitter_client.client, tweepy.Client), (
                 "Client is not a Tweepy Client instance"
