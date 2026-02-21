@@ -1,37 +1,52 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>ERCOT Dashboard</title>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-        body {
-            font-family: sans-serif;
-            margin: 2em;
-        }
+{% extends "base.html" %}
 
-        .chart-container {
-            width: 80%;
-            margin: auto;
-        }
+{% block title %}Time Series - ERCOT Dashboard{% endblock %}
 
-        nav {
-            margin-bottom: 2em;
-        }
-    </style>
-</head>
-<body>
-<h1>ERCOT Generation Mix Over Time</h1>
-<nav>
-    <a href="/">View Images</a>
-    <a href="/dashboard?timespan=1D">1 Day</a>
-    <a href="/dashboard?timespan=3D">3 Days</a>
-    <a href="/dashboard?timespan=1W">1 Week</a>
-    <a href="/dashboard?timespan=1M">1 Month</a>
-</nav>
-<div class="chart-container">
-    <canvas id="genChart"></canvas>
-</div>
+{% block extra_styles %}
+    .controls {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin-bottom: 20px;
+        flex-wrap: wrap;
+    }
 
+    .controls a {
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #4CAF50;
+        font-size: 14px;
+    }
+
+    .controls a:hover {
+        border-color: #4CAF50;
+        background: #f8f9fa;
+    }
+
+    .chart-container {
+        margin: 30px 0;
+    }
+{% endblock %}
+
+{% block content %}
+    <h1 style="margin: 0; color: #333; margin-bottom: 20px;">ERCOT Generation Mix Over Time</h1>
+
+    <div class="controls">
+        <a href="/dashboard?timespan=1D">1 Day</a>
+        <a href="/dashboard?timespan=3D">3 Days</a>
+        <a href="/dashboard?timespan=5D">5 Days</a>
+        <a href="/dashboard?timespan=1W">1 Week</a>
+        <a href="/dashboard?timespan=1M">1 Month</a>
+    </div>
+
+    <div class="chart-container">
+        <canvas id="genChart"></canvas>
+    </div>
+{% endblock %}
+
+{% block extra_scripts %}
 <script>
     const ctx = document.getElementById('genChart').getContext('2d');
     const labels = {{ labels | tojson }}
@@ -98,5 +113,4 @@
         }
     });
 </script>
-</body>
-</html>
+{% endblock %}

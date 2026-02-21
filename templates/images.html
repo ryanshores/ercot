@@ -1,67 +1,131 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <title>ERCOT Images</title>
-    <style>
-        body {
-            font-family: sans-serif;
-            margin: 2em;
-        }
+{% extends "base.html" %}
 
-        .controls {
-            margin-bottom: 1em;
-        }
+{% block title %}View Images - ERCOT Dashboard{% endblock %}
 
-        .pagination {
-            margin-top: 1em;
-        }
+{% block extra_styles %}
+    .controls {
+        margin-bottom: 1em;
+    }
 
-        .pagination a {
-            margin-right: 0.5em;
-            text-decoration: none;
-            color: blue;
-        }
+    .controls form {
+        display: flex;
+        gap: 15px;
+        align-items: center;
+ flex-wrap: wrap;
+    }
 
-        .pagination span {
-            margin-right: 0.5em;
-        }
-    </style>
-</head>
-<body>
-<h1>ERCOT Visualizations</h1>
-<nav>
-    <a href="/dashboard">View Dashboard</a>
-</nav>
-<div class="controls">
-    <form action="/" method="get">
-        <label for="sort-select">Sort By:</label>
-        <select id="sort-select" name="sort" onchange="this.form.submit()">
-            <option {% if sort=='desc' %}selected{% endif %}>Newest First</option>
-            <option {% if sort=='asc' %}selected{% endif %}>Oldest First</option>
-        </select>
-        <label for="page-size-select">Page Size:</label>
-        <select id="page-size-select" name="page_size" onchange="this.form.submit()">
-            <option {% if page_size==10 %}selected{% endif %}>10</option>
-            <option {% if page_size==20 %}selected{% endif %}>20</option>
-            <option {% if page_size==50 %}selected{% endif %}>50</option>
-        </select>
-        <input name="page" type="hidden" value="1">
-    </form>
-</div>
-<ul>
-    {% for file in files %}
-    <li><a href="/images/{{ file }}">{{ file }}</a></li>
-    {% endfor %}
-</ul>
+    .controls label {
+        font-weight: 500;
+    }
 
-<div class="pagination">
-    {% if page > 1 %}
-    <a href="/?page={{ page - 1 }}&sort={{ sort }}&page_size={{ page_size }}">Previous</a>
-    {% endif %}
-    <span>Page {{ page }} of {{ total_pages }}</span>
-    {% if page < total_pages %}
-    <a href="/?page={{ page + 1 }}&sort={{ sort }}&page_size={{ page_size }}">Next</a>
-    {% endif %}
-</div>
-</body>
-</html>
+    .controls select {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+
+    .files-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 20px;
+        margin-top: 20px;
+    }
+
+    .file-card {
+        border: 1px solid #ddd;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: box-shadow 0.3s;
+    }
+
+    .file-card:hover {
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    }
+
+    .file-card a {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+    }
+
+    .file-card img {
+        width: 100%;
+        height: 150px;
+        object-fit: cover;
+        display: block;
+    }
+
+    .file-card .filename {
+        padding: 10px;
+        font-size: 14px;
+        color: #333;
+    }
+
+    .pagination {
+        margin-top: 30px;
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        align-items: center;
+    }
+
+    .pagination a {
+        padding: 8px 16px;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        text-decoration: none;
+        color: #4CAF50;
+    }
+
+    .pagination a:hover {
+        background: #f8f9fa;
+        border-color: #4CAF50;
+    }
+
+    .pagination span {
+        font-weight: 500;
+    }
+{% endblock %}
+
+{% block content %}
+    <h1 style="margin: 0; color: #333; margin-bottom: 20px;">ERCOT Visualizations</h1>
+
+    <div class="controls">
+        <form action="/images" method="get">
+            <label for="sort-select">Sort By:</label>
+            <select id="sort-select" name="sort" onchange="this.form.submit()">
+                <option value="desc" {% if sort=='desc' %}selected{% endif %}>Newest First</option>
+                <option value="asc" {% if sort=='asc' %}selected{% endif %}>Oldest First</option>
+            </select>
+            <label for="page-size-select">Page Size:</label>
+            <select id="page-size-select" name="page_size" onchange="this.form.submit()">
+                <option value="10" {% if page_size==10 %}selected{% endif %}>10</option>
+                <option value="20" {% if page_size==20 %}selected{% endif %}>20</option>
+                <option value="50" {% if page_size==50 %}selected{% endif %}>50</option>
+            </select>
+            <input name="page" type="hidden" value="1">
+        </form>
+    </div>
+
+    <div class="files-grid">
+        {% for file in files %}
+        <div class="file-card">
+            <a href="/images/{{ file }}">
+                <img src="/images/{{ file }}" alt="{{ file }}" loading="lazy">
+                <div class="filename">{{ file }}</div>
+            </a>
+        </div>
+        {% endfor %}
+    </div>
+
+    <div class="pagination">
+        {% if page > 1 %}
+        <a href="/images?page={{ page - 1 }}&sort={{ sort }}&page_size={{ page_size }}">Previous</a>
+        {% endif %}
+        <span>Page {{ page }} of {{ total_pages }}</span>
+        {% if page < total_pages %}
+        <a href="/images?page={{ page + 1 }}&sort={{ sort }}&page_size={{ page_size }}">Next</a>
+        {% endif %}
+    </div>
+{% endblock %}
