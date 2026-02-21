@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, UTC
 
 from sqlalchemy.orm import Session
 
-from src.models.energy import GenInstant
+from src.models.energy import GenInstant, energy_sources
 from src.service.db.gen_instant import get_by_dates
 
 
@@ -113,28 +113,22 @@ class DashboardService:
         return datasets
 
     @staticmethod
+    def _get_source_metadata():
+        return {
+            meta["name"]: {
+                "display": meta.get("display", meta["name"]),
+                "color": meta["color"],
+                "renewable": meta["renewable"],
+            }
+            for meta in energy_sources.values()
+        }
+
+    @staticmethod
     def get_generation_by_day(db: Session, days: int = 30):
         end_time = datetime.now(UTC)
         start_time = end_time - timedelta(days=days)
 
-        source_metadata = {
-            "nuclear": {"display": "Nuclear", "color": "#FFCD56", "renewable": True},
-            "coal": {"display": "Coal", "color": "#000000", "renewable": False},
-            "natural_gas": {
-                "display": "Natural Gas",
-                "color": "#9966FF",
-                "renewable": False,
-            },
-            "other": {"display": "Other", "color": "#C9CBCF", "renewable": True},
-            "hydro": {"display": "Hydro", "color": "#36A2EB", "renewable": True},
-            "wind": {"display": "Wind", "color": "#4BC0C0", "renewable": True},
-            "solar": {"display": "Solar", "color": "#FF9F40", "renewable": True},
-            "power_storage": {
-                "display": "Power Storage",
-                "color": "#FF6384",
-                "renewable": True,
-            },
-        }
+        source_metadata = DashboardService._get_source_metadata()
 
         daily_data = defaultdict(lambda: defaultdict(float))
 

@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from src.db.database import get_db
+from src.models.energy import energy_sources
 from src.service.dashboard_service import DashboardService
 
 # Project root (../ from this file because this file lives in src/)
@@ -76,10 +77,24 @@ def dashboard(
     """
     labels, datasets = DashboardService.get_dashboard_data(db, timespan)
 
+    # Build color mappings from energy_sources for frontend
+    def hex_to_rgba(hex_color, alpha):
+        hex_color = hex_color.lstrip("#")
+        r = int(hex_color[0:2], 16)
+        g = int(hex_color[2:4], 16)
+        b = int(hex_color[4:6], 16)
+        return {"r": r, "g": g, "b": b, "a": alpha, "a_bg": 0.2}
+
+    source_colors = {}
+    for key, meta in energy_sources.items():
+        source_colors[meta["name"]] = hex_to_rgba(meta["color"], 1.0)
+    source_colors["power storage (discharging)"] = hex_to_rgba("#FF5078", 0.8)
+    source_colors["power storage (charging)"] = hex_to_rgba("#FF6384", 1.0)
+
     return templates.TemplateResponse(
         request,
         "dashboard.html",
-        {"labels": labels, "datasets": datasets},
+        {"labels": labels, "datasets": datasets, "source_colors": source_colors},
         headers=cache_header,
     )
 
