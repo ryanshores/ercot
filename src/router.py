@@ -25,15 +25,12 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 app.mount("/images", StaticFiles(directory=str(OUT_DIR)), name="images")
 
 
-cache_header = {"Cache-Control": f"max-age={60*5}, must-revalidate"}
+cache_header = {"Cache-Control": f"max-age={60 * 5}, must-revalidate"}
 
 
 @app.get("/", response_class=HTMLResponse)
 def list_images(
-        request: Request,
-        page: int = 1,
-        page_size: int = 20,
-        sort: str = "desc"
+    request: Request, page: int = 1, page_size: int = 20, sort: str = "desc"
 ):
     """
     Endpoint to list all images in the 'out' folder with paging and sorting.
@@ -62,17 +59,18 @@ def list_images(
             "page_size": page_size,
             "sort": sort,
             "total": total,
-            "total_pages": (total + page_size - 1) // page_size
+            "total_pages": (total + page_size - 1) // page_size,
         },
-        headers=cache_header
+        headers=cache_header,
     )
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(
-        request: Request,
-        timespan: str = '5D',  # 3W, 1M, 3M, 6M, 1Y
-        db: Session = Depends(get_db)):
+    request: Request,
+    timespan: str = "5D",  # 3W, 1M, 3M, 6M, 1Y
+    db: Session = Depends(get_db),
+):
     """
     UI dashboard to view the data over time.
     """
@@ -81,9 +79,31 @@ def dashboard(
     return templates.TemplateResponse(
         request,
         "dashboard.html",
+        {"labels": labels, "datasets": datasets},
+        headers=cache_header,
+    )
+
+
+@app.get("/generation-by-day", response_class=HTMLResponse)
+def generation_by_day(
+    request: Request,
+    days: int = 30,
+    view: str = "graph",  # 'graph' or 'table'
+    db: Session = Depends(get_db),
+):
+    """
+    UI dashboard to view total energy generation by day with renewable percentage.
+    """
+    chart_data, table_data = DashboardService.get_generation_by_day(db, days)
+
+    return templates.TemplateResponse(
+        request,
+        "generation_by_day.html",
         {
-            "labels": labels,
-            "datasets": datasets
+            "chart_data": chart_data,
+            "table_data": table_data,
+            "days": days,
+            "view": view,
         },
-        headers=cache_header
+        headers=cache_header,
     )
