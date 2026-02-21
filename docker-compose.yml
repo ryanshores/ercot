@@ -9,6 +9,12 @@ services:
       - ercot_db:/usr/src/app/data
     environment:
       - APP_MODE=prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 10s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
 
 volumes:
   ercot:
