@@ -8,6 +8,7 @@ from fastapi.templating import Jinja2Templates
 from sqlalchemy.orm import Session
 
 from src.db.database import get_db
+from src.models.energy import energy_sources
 from src.service.dashboard_service import DashboardService
 
 # Project root (../ from this file because this file lives in src/)
@@ -25,15 +26,12 @@ templates = Jinja2Templates(directory=str(TEMPLATES_DIR))
 app.mount("/images", StaticFiles(directory=str(OUT_DIR)), name="images")
 
 
-cache_header = {"Cache-Control": f"max-age={60*5}, must-revalidate"}
+cache_header = {"Cache-Control": f"max-age={60 * 5}, must-revalidate"}
 
 
 @app.get("/", response_class=HTMLResponse)
 def list_images(
-        request: Request,
-        page: int = 1,
-        page_size: int = 20,
-        sort: str = "desc"
+    request: Request, page: int = 1, page_size: int = 20, sort: str = "desc"
 ):
     """
     Endpoint to list all images in the 'out' folder with paging and sorting.
@@ -62,28 +60,58 @@ def list_images(
             "page_size": page_size,
             "sort": sort,
             "total": total,
-            "total_pages": (total + page_size - 1) // page_size
+            "total_pages": (total + page_size - 1) // page_size,
         },
-        headers=cache_header
+        headers=cache_header,
     )
 
 
 @app.get("/dashboard", response_class=HTMLResponse)
 def dashboard(
-        request: Request,
-        timespan: str = '5D',  # 3W, 1M, 3M, 6M, 1Y
-        db: Session = Depends(get_db)):
+    request: Request,
+    timespan: str = "5D",  # 3W, 1M, 3M, 6M, 1Y
+    db: Session = Depends(get_db),
+):
     """
     UI dashboard to view the data over time.
     """
     labels, datasets = DashboardService.get_dashboard_data(db, timespan)
 
+    # Build color mappings from energy_sources for frontend
+    source_colors = {}
+    for key, meta in energy_sources.items():
+        source_colors[meta["name"]] = meta["color"]
+    source_colors["power storage (discharging)"] = "#FF5078"
+    source_colors["power storage (charging)"] = "#FF6384"
+
     return templates.TemplateResponse(
         request,
         "dashboard.html",
+        {"labels": labels, "datasets": datasets, "source_colors": source_colors},
+        headers=cache_header,
+    )
+
+
+@app.get("/generation-by-day", response_class=HTMLResponse)
+def generation_by_day(
+    request: Request,
+    days: int = 30,
+    view: str = "graph",  # 'graph' or 'table'
+    db: Session = Depends(get_db),
+):
+    """
+    UI dashboard to view total energy generation by day with renewable percentage.
+    """
+    chart_data, table_data = DashboardService.get_generation_by_day(db, days)
+
+    return templates.TemplateResponse(
+        request,
+        "generation_by_day.html",
         {
-            "labels": labels,
-            "datasets": datasets
+            "chart_data": chart_data,
+            "table_data": table_data,
+            "days": days,
+            "view": view,
         },
-        headers=cache_header
+        headers=cache_header,
     )

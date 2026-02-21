@@ -36,82 +36,11 @@
     const ctx = document.getElementById('genChart').getContext('2d');
     const labels = {{ labels | tojson }}
     const datasets = {{ datasets | tojson }}
-
-    // Add some colors to datasets
-    const color_mappings = {
-        'coal': {
-            'r': 0,
-            'g': 0,
-            'b': 0,
-            'a': 1,
-            'a_bg': 0.2,
-        },
-        'natural_gas': {
-            'r': 153,
-            'g': 102,
-            'b': 255,
-            'a': 1,
-            'a_bg': 0.2,
-        },
-        'hydro': {
-            'r': 54,
-            'g': 162,
-            'b': 235,
-            'a': 1,
-            'a_bg': 0.2,
-        },
-        'nuclear': {
-            'r': 255,
-            'g': 205,
-            'b': 86,
-            'a': 1,
-            'a_bg': 0.2,
-        },
-        'other': {
-            'r': 201,
-            'g': 203,
-            'b': 207,
-            'a': 1,
-            'a_bg': 0.2,
-        },
-        'power storage (charging)': {
-            'r': 255,
-            'g': 99,
-            'b': 132,
-            'a': 1,
-            'a_bg': 0.2,
-        },
-        'power storage (discharging)': {
-            'r': 255,
-            'g': 80,
-            'b': 120,
-            'a': 0.8,
-            'a_bg': 0.2,
-        },
-        'solar': {
-            'r': 255,
-            'g': 159,
-            'b': 64,
-            'a': 1,
-            'a_bg': 0.2,
-        },
-        'wind': {
-            'r': 75,
-            'g': 192,
-            'b': 192,
-            'a': 1,
-            'a_bg': 0.2,
-        },
-    }
+    const sourceColors = {{ source_colors | tojson }}
 
     datasets.forEach((dataset) => {
-        const color_map = color_mappings[dataset.label] || {
-            'r': 100, 'g': 100, 'b': 100, 'a': 1, 'a_bg': 0.2
-        };
-
-        let color = `rgba(${color_map.r}, ${color_map.g}, ${color_map.b}, ${color_map.a})`;
-        let color_bg = `rgba(${color_map.r}, ${color_map.g}, ${color_map.b}, ${color_map.a_bg})`;
-
+        const color = sourceColors[dataset.label] || '#666666';
+        
         dataset.borderColor = color;
         dataset.backgroundColor = (context) => {
             const chart = context.chart;
@@ -120,8 +49,7 @@
 
             const gradient = ctx.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
             gradient.addColorStop(0, color);
-            gradient.addColorStop(0.5, color_bg);
-            gradient.addColorStop(1, color_bg);
+            gradient.addColorStop(1, color + '33');
 
             return gradient;
         };
