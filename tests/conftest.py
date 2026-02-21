@@ -1,7 +1,8 @@
+import os
 from typing import Generator
 
 import pytest
-from sqlalchemy import create_engine, StaticPool
+from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, Session
 
 from src.db.database import Base
@@ -11,11 +12,8 @@ from tests.fixtures.gen_instants import seed as db_seed_gen_instants
 
 @pytest.fixture(scope="session")
 def engine():
-    engine = create_engine(
-        "sqlite://",
-        connect_args={"check_same_thread": False},
-        poolclass=StaticPool,
-    )
+    os.makedirs("/tmp", exist_ok=True)
+    engine = create_engine("sqlite:////tmp/test.db")
     Base.metadata.create_all(bind=engine)
     try:
         yield engine
