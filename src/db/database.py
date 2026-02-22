@@ -20,13 +20,6 @@ class Base(DeclarativeBase):
     pass
 
 
-def init_db():
-    """Initializes the database."""
-    # create folders if they don't exist yet
-    DEFAULT_DB_PATH.parent.mkdir(parents=True, exist_ok=True)
-    Base.metadata.create_all(bind=engine)
-
-
 def get_db() -> Generator[Session, None, None]:
     """Dependency that yields a DB session and always closes it."""
     db = SessionLocal()

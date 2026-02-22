@@ -12,3 +12,4 @@ sqlalchemy
 pydantic
 numpy
 jinja2
+alembic

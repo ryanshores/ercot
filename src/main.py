@@ -5,21 +5,18 @@ import time
 import schedule
 import uvicorn
 
-from src.db.database import init_db
 from src.logger.logger import get_logger
 from src.router import app
 from src.service.ercot import Ercot
 
-init_db()
-
-logger = get_logger(__name__)
-
 MODE_DEV = "dev"
 MODE_PROD = "prod"
 
-SCHEDULE_EVERY_MINUTES = 30
-
 APP_MODE = os.getenv("APP_MODE", MODE_DEV)
+
+logger = get_logger(__name__)
+
+SCHEDULE_EVERY_MINUTES = 30
 
 
 def run() -> None:

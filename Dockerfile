@@ -13,6 +13,13 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY . .
+#COPY . .
+COPY alembic ./alembic
+COPY alembic.ini .
+COPY entrypoint.sh .
+COPY src ./src
+COPY templates ./templates
 
-ENTRYPOINT ["python", "-m", "src.main"]
+RUN chmod +x entrypoint.sh
+
+ENTRYPOINT ["./entrypoint.sh"]
