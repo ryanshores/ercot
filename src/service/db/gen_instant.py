@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from src.models.energy import GenInstant, GenSource
 from src.schema import schema
@@ -23,10 +23,15 @@ def get_last_x_gen_instants(db: Session, n: int) -> list[GenInstant]:
 
 
 def get_by_dates(db: Session, start_time: datetime, end_time: datetime) -> list[GenInstant]:
-    return db.query(GenInstant).filter(
-        GenInstant.timestamp >= start_time.isoformat(),
-        GenInstant.timestamp <= end_time.isoformat()
-    ).all()
+    return (
+        db.query(GenInstant)
+        .options(joinedload(GenInstant.gen_sources).joinedload(GenSource.source))
+        .filter(
+            GenInstant.timestamp >= start_time.isoformat(),
+            GenInstant.timestamp <= end_time.isoformat(),
+        )
+        .all()
+    )
 
 
 def create_gen_instant(db: Session, gen_instant: schema.GenInstantCreate, commit: bool = True) -> GenInstant:
