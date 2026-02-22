@@ -15,7 +15,7 @@ print('yes' if 'alembic_version' in inspector.get_table_names() else 'no')
 
 echo "Alembic version table exists: $ALEMBIC_EXISTS"
 
-if [ "$ALEMBIC_EXISTS" = "yes" ]; then
+if [ "$ALEMBIC_EXISTS" = "no" ]; then
     # Check if our tables already exist (existing deployment without Alembic)
     TABLES_EXIST=$(python -c "
 from sqlalchemy import inspect, create_engine
