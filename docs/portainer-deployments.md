@@ -17,9 +17,11 @@ Production currently uses port 8000 and volume ercot-energy-mix_ercot_db. compos
 
 ## Access hardening
 
-Nginx Proxy Manager changes applied to pt.ryanshores.us: Cache Assets off, Force SSL on, proxy caching off, and origin Cache-Control no-cache. Management access protection remains pending the choice between Cloudflare Access with MFA and LAN/VPN-only access. Automation should reach only its specific HTTPS webhook path using POST. Keep the rest of the UI/API behind the chosen operator access gate. Do not broadly exempt /api from authentication. Check direct-origin restrictions and router forwarding separately; do not expose management ports 81/9000 to the internet.
+Nginx Proxy Manager changes applied to pt.ryanshores.us: Cache Assets off, Force SSL on, proxy caching off, and origin Cache-Control no-cache. Management access now uses the existing Local IPs Only access list (192.168.50.0/24 and 10.6.0.0/24). Only UUID-shaped /api/stacks/webhooks/<uuid> paths accept public POST requests. Other public API requests and webhook GET requests return 403. A dummy webhook POST reaches Portainer and returns its missing-webhook 404; direct LAN /api/status still works. The callback URL remains a bearer credential and must stay secret.
 
-If Cloudflare Access is used, exempt only the exact webhook endpoint from interactive login (its random URL is the bearer credential), or add service-token authentication and corresponding request headers. Do not enable the workflow until this has been verified. Cloudflare settings were not changed by this repository setup. Verification found Cloudflare still applies its own caching policy (max-age=14400 on a fresh URL); add a cache bypass rule for the entire Portainer hostname and purge its existing cache. Origin responses now return no-cache, but edge caching is not yet fixed.
+Cloudflare still has older cached UI responses. Purge the cache for this hostname and add a full cache bypass rule in Cloudflare. No Cloudflare account configuration was changed. Router forwarding and direct internet access to management ports 81/9000 remain unverified.
+
+Next steps: sign into Portainer over the LAN/VPN, reconcile its production stack with the committed Compose definition, configure its GitOps webhook, put the URL into the production GitHub environment secret, and enable the repository variable only after image pulls are verified. No real webhook was generated and no deployment was triggered during hardening.
 
 ## Rollback
 
