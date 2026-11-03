@@ -21,7 +21,9 @@ Nginx Proxy Manager changes applied to pt.ryanshores.us: Cache Assets off, Force
 
 Cloudflare still has older cached UI responses. Purge the cache for this hostname and add a full cache bypass rule in Cloudflare. No Cloudflare account configuration was changed. Router forwarding and direct internet access to management ports 81/9000 remain unverified.
 
-Next steps: sign into Portainer over the LAN/VPN, reconcile its production stack with the committed Compose definition, configure its GitOps webhook, put the URL into the production GitHub environment secret, and enable the repository variable only after image pulls are verified. No real webhook was generated and no deployment was triggered during hardening.
+Setup progress: PR #29 is merged. GitHub tests and GHCR publication succeeded for main commit 77f1ab12b084f3ed303a7649c53e61512de0bb2f, and anonymous image-manifest access was verified. The existing Portainer Git stack now references refs/heads/main and has compose.production.yml saved for the next deployment. Its existing webhook is stored with the public HTTPS hostname in the GitHub production environment secret. That environment permits deployments only from main.
+
+End-to-end verification is blocked at Cloudflare: the HTTPS callback returns 403 from GitHub Actions without reaching the origin access log. PORTAINER_DEPLOY_ENABLED was returned to false until this is fixed. The initial HTTP callback configuration was corrected; the current error is edge filtering. Cloudflare sign-in requires the user's Touch ID before the relevant rule can be inspected. No successful automated deployment has occurred. After the narrow Cloudflare correction, reenable the variable, rerun the failed notification, and verify the Portainer stack actually pulled the image and retained the database. The prior app remains healthy.
 
 ## Rollback
 
