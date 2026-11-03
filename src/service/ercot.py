@@ -1,9 +1,7 @@
 from datetime import datetime
-from typing import Dict, List, Tuple, Any
+from typing import Dict, Any
 
-import numpy as np
 import requests
-from matplotlib import pyplot as plt
 
 from src.db.database import SessionLocal
 from src.logger.logger import get_logger
@@ -20,8 +18,6 @@ def _latest_key(mapping: Dict[str, Any]) -> str:
 
 
 class Ercot:
-    FIGURE_SIZE = (8, 6)
-    CHART_START_ANGLE = 140
     RENEWABLE_SOURCES = {'Hydro', 'Nuclear', 'Other', 'Power Storage', 'Solar', 'Wind'}
     DATE_FORMAT = '%Y-%m-%d %H:%M:%S-%f'
     DISPLAY_DATE_FORMAT = '%b %d, %Y %I:%M %p'
@@ -39,13 +35,7 @@ class Ercot:
         "wind": "Wind",
     }
 
-    def __init__(self, image_file: str = None) -> None:
-        """
-        Initialize the FuelMix class.
-
-        :param image_file: Path to the image file where the fuel mix chart will be saved.
-        """
-        self.image_file = image_file or 'ercot_mix.png'
+    def __init__(self) -> None:
         self.timestamp: str = ""
         self.mix: Dict[str, Dict[str, Any]] = {}
         self.title: str = ""
@@ -89,16 +79,8 @@ class Ercot:
     def renewable_pct(self) -> float:
         return self.renewable_gen / self.total_gen * 100 if self.total_gen else 0
 
-    @property
-    def png_file_name(self) -> str:
-        return f'{self.timestamp}.png'
-
-    def _output_path(self) -> str:
-        file_name = self.png_file_name if self.timestamp else self.image_file
-        return f'out/{file_name}'
-
     def _process_gen_data(self) -> None:
-        """Process fuel mix data and generate visualization."""
+        """Fetch and persist fuel mix data."""
         self._fetch_fuel_mix()
         self._generate_text()
 
@@ -137,31 +119,19 @@ class Ercot:
         gen_instants = []
         for day in data.values():
             for timestamp, mix_data in day.items():
-                mix = {key: value['gen'] for key, value in mix_data.items()}
+                # ERCOT also supplies a charging/discharging breakdown. The net
+                # Power Storage field already includes it; do not count it twice.
+                mix = {
+                    key: value['gen'] for key, value in mix_data.items()
+                    if key not in {'Power Storage Charging', 'Power Storage Discharging'}
+                }
                 gen_instants.append(schema.GenInstantCreate(
                     timestamp=timestamp,
                     sources=mix
                 ))
-        try:
-            with SessionLocal() as db:
-                created_instances = create_gen_instances(db, gen_instants)
-                logger.info("Saved gen instances for %d timestamps", len(created_instances))
-        except Exception as e:
-            # use debug because this is expected
-            logger.warning(
-                f"Failed to save gen instances for {len(gen_instants)} timestamps: {e}")
-
-    def _prepare_chart_data(self) -> Tuple[List[str], List[float], List[str], List[float]]:
-        """Prepare data for chart visualization."""
-        labels = list(self.mix.keys())
-        values = [entry['gen'] for entry in self.mix.values()]
-        total = sum(values)
-        legend_labels = [
-            f"{label}: {value / total * 100:.1f}%"
-            for label, value in zip(labels, values)
-        ]
-        explodes = [0.1 if label not in self.RENEWABLE_SOURCES else 0 for label in labels]
-        return labels, values, legend_labels, explodes
+        with SessionLocal() as db:
+            created_instances = create_gen_instances(db, gen_instants)
+            logger.info("Saved gen instances for %d timestamps", len(created_instances))
 
     def _generate_text(self) -> None:
         """Generate formatted chart title with timestamp."""
@@ -175,25 +145,3 @@ class Ercot:
             f"Currently ERCOT is running on {self.renewable_pct:.2f}% renewable energy. "
             f"#Texas #ERCOT #Renewables"
         )
-
-    def create_visualization(self) -> None:
-        """Generate and save the pie chart visualization."""
-        _, values, legend_labels, explodes = self._prepare_chart_data()
-
-        # remove negative values
-        values = [max(value, 0) for value in values]
-
-        plt.figure(figsize=self.FIGURE_SIZE)
-        cmap = plt.get_cmap("tab20")
-        colors = cmap(np.linspace(0, 1, 20))  # (20, 4) RGBA array
-        wedges, _ = plt.pie(values, explode=explodes, colors=colors, startangle=self.CHART_START_ANGLE)
-
-        img_file = self._output_path()
-
-        plt.title(self.title)
-        plt.legend(wedges, legend_labels, loc="center left", bbox_to_anchor=(1, 0.5))
-        plt.axis('equal')
-        plt.tight_layout()
-        plt.savefig(img_file, bbox_inches='tight')
-        plt.close()
-        logger.info(f"Created visualization: {img_file}")

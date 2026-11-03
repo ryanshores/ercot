@@ -22,8 +22,8 @@ SCHEDULE_EVERY_MINUTES = 30
 def run() -> None:
 
     try:
-        with Ercot() as ercot:
-            ercot.create_visualization()
+        with Ercot():
+            pass
     except Exception as e:
         logger.exception("Error connecting to ERCOT", exc_info=e)
         return

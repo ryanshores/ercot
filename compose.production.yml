@@ -1,0 +1,23 @@
+# Portainer Git stack: refs/heads/main
+services:
+  app:
+    image: ghcr.io/ryanshores/ercot:main
+    pull_policy: always
+    ports:
+      - "8000:8000"
+    volumes:
+      - ercot_db:/usr/src/app/data
+    environment:
+      APP_MODE: prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  ercot_db:
+    external: true
+    name: ercot-energy-mix_ercot_db
