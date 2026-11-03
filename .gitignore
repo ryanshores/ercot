@@ -3,3 +3,6 @@
 ercot_mix.png
 out
 data
+__pycache__/
+*.pyc
+.pytest_cache/

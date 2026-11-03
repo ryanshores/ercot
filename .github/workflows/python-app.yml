@@ -1,45 +1,95 @@
-# This workflow will install Python dependencies, run tests and lint with a single version of Python
-# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
-
-name: Python application
+name: Test, publish, and notify Portainer
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [main]
   pull_request:
-    branches: [ "main" ]
+    branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
+# Serialize releases for each branch; never interrupt a deployment in progress.
+concurrency:
+  group: ercot-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
-  build:
-
+  test:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: "3.11"
-          cache: 'pip'
-      - name: Install dependencies
+          python-version: '3.11'
+          cache: pip
+      - run: python -m pip install -r requirements.txt
+      - run: flake8 src tests --select=E9,F63,F7,F82 --show-source
+      - run: pytest -q
+      - name: Validate Portainer stacks
         run: |
-          python -m pip install --upgrade pip
-          pip install flake8 pytest
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-      - name: Lint with flake8
+          docker compose -f compose.production.yml config --quiet
+
+  publish:
+    needs: test
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.image.outputs.name }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Image name
+        id: image
+        shell: bash
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ steps.image.outputs.name }}:${{ github.ref_name }}
+            ${{ steps.image.outputs.name }}:sha-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.revision=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  notify-portainer:
+    needs: publish
+    # Set this repository variable only after the production stack and access rules are ready.
+    if: vars.PORTAINER_DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Request deployment
+        env:
+          PORTAINER_WEBHOOK_URL: ${{ secrets.PORTAINER_WEBHOOK_URL }}
+        shell: bash
         run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
-      - name: Test with pytest
-        run: |
-          pytest
-      - name: Test app runs
-        run: |
-          # optional: fail fast if something goes wrong
-          set -e
-          python -m src.main
+          set -euo pipefail
+          if [[ "$PORTAINER_WEBHOOK_URL" != https://* ]]; then
+            echo 'Configure the HTTPS PORTAINER_WEBHOOK_URL secret for this environment.'
+            exit 1
+          fi
+          # Keep the bearer URL and any response out of the logs. Do not retry POSTs:
+          # acceptance is asynchronous and retrying can request duplicate deployments.
+          if ! status=$(curl --silent --output /dev/null --write-out '%{http_code}' \
+            --connect-timeout 15 --max-time 60 --request POST "$PORTAINER_WEBHOOK_URL" 2>/dev/null); then
+            echo 'Portainer webhook could not be reached.'
+            exit 1
+          fi
+          case "$status" in
+            2??) echo 'Portainer accepted the request. Check stack status and data freshness in Portainer.' ;;
+            *) echo "Portainer rejected the request (HTTP $status)."; exit 1 ;;
+          esac

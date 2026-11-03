@@ -19,10 +19,7 @@ COPY alembic.ini .
 COPY entrypoint.sh .
 COPY src ./src
 COPY templates ./templates
-# These will pull any existing data for the build
-# Rename or remove data/ercot.db to start with a fresh database
-COPY data ./data
-COPY out ./out
+RUN mkdir -p data
 
 RUN chmod +x entrypoint.sh
 

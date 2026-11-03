@@ -5,7 +5,6 @@ services:
     ports:
       - "8000:8000"
     volumes:
-      - ercot:/usr/src/app/out
       - ercot_db:/usr/src/app/data
     environment:
       - APP_MODE=prod
@@ -18,5 +17,4 @@ services:
     restart: unless-stopped
 
 volumes:
-  ercot:
   ercot_db:
